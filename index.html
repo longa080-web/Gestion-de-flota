@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario y Gestión de Flota</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCduVLuyrEotV4VKnmw-QL_RJfA_vwYh-8",
+            authDomain: "gestion-de-flota-13215.firebaseapp.com",
+            projectId: "gestion-de-flota-13215",
+            storageBucket: "gestion-de-flota-13215.firebasestorage.app",
+            messagingSenderId: "737561798891",
+            appId: "1:737561798891:web:06b07983841a66b0fa36ae"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        
+        // Hacer disponible Firebase para el resto de la aplicación
+        window.firebaseApp = app;
+        console.log('Firebase inicializado correctamente');
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .bg-inter-primary { background-color: #005BAA; }
+        .bg-inter-accent-light { background-color: #5CE1E6; }
+        .bg-inter-accent-yellow { background-color: #FDD000; }
+        .text-inter-primary { color: #005BAA; }
+        .tab-link.active span { border-bottom-color: #005BAA; color: #005BAA; }
+        .tab-link:not(.active) span:hover { color: #005BAA; }
+        .tab-link.active svg path { fill: #005BAA; }
+        .tab-link:not(.active) svg:hover path { fill: #005BAA; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-inter-primary text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Gestión de Flota</h1>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="flex border-b border-gray-200">
+                <button class="tab-link active focus:outline-none p-4" data-tab-id="vehiculos">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Registro de Vehículos</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="mantenimientos">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Registro de Mantenimientos</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="inspeccion">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Inspección Pre-Operacional</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="combustible">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Control de Combustible</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="siniestros">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Registro de Siniestros</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="lavado">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Lavado de autos</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="gasoil-head-end">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Gasoil Head End</span>
+                </button>
+                <button class="tab-link focus:outline-none p-4" data-tab-id="reportes">
+                    <span class="font-medium text-lg border-b-2 border-transparent pb-4">Reportes y Estadísticas</span>
+                </button>
+            </div>
+
+            <div id="tab-content" class="mt-6">
+
+                <!-- Pestaña de Vehículos -->
+                <div id="vehiculos" class="tab-pane">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Registro de Vehículos</h2>
+                    <form id="vehicleForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="vehicleId">
+                        <div>
+                            <label for="placa" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input type="text" id="placa" name="placa" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="marca" class="block text-sm font-medium text-gray-700">Marca</label>
+                            <input type="text" id="marca" name="marca" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="modelo" class="block text-sm font-medium text-gray-700">Modelo</label>
+                            <input type="text" id="modelo" name="modelo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="anio" class="block text-sm font-medium text-gray-700">Año</label>
+                            <input type="number" id="anio" name="anio" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="centroOperaciones" class="block text-sm font-medium text-gray-700">Centro de Operaciones</label>
+                            <input list="centroOperacionesList" id="centroOperaciones" name="centroOperaciones" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                            <datalist id="centroOperacionesList">
+                                <option value="MSO">
+                                <option value="UN CCS">
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="capacidadTanque" class="block text-sm font-medium text-gray-700">Capacidad Tanque</label>
+                            <input type="number" id="capacidadTanque" name="capacidadTanque" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                        </div>
+                        <div>
+                            <label for="departamentoAsignado" class="block text-sm font-medium text-gray-700">Departamento Asignado</label>
+                            <input type="text" id="departamentoAsignado" name="departamentoAsignado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                        </div>
+                        <div>
+                            <label for="estado" class="block text-sm font-medium text-gray-700">Estado</label>
+                            <input type="text" id="estado" name="estado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Vehículo</button>
+                            <button type="button" id="deleteMassiveBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-red-700 transition duration-300">Eliminar Todos los Vehículos</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importVehicleFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importVehicleBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Vehículos</button>
+                        </div>
+                        <input type="text" id="searchVehicleInput" placeholder="Buscar vehículo..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportVehicleBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="vehicleTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Marca</th>
+                                    <th class="py-3 px-6 text-left">Modelo</th>
+                                    <th class="py-3 px-6 text-left">Año</th>
+                                    <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-left">Capacidad Tanque</th>
+                                    <th class="py-3 px-6 text-left">Departamento Asignado</th>
+                                    <th class="py-3 px-6 text-left">Estado</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="vehicleTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Mantenimientos -->
+                <div id="mantenimientos" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Registro de Mantenimientos</h2>
+                    <form id="maintenanceForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="maintenanceId">
+                        <div>
+                            <label for="placaMantenimiento" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input list="placasList" id="placaMantenimiento" name="placaMantenimiento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                            <datalist id="placasList"></datalist>
+                        </div>
+                        <div>
+                            <label for="tipoMantenimiento" class="block text-sm font-medium text-gray-700">Tipo de Mantenimiento</label>
+                            <select id="tipoMantenimiento" name="tipoMantenimiento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="" disabled selected>Seleccione un tipo</option>
+                                <option value="preventivo">Preventivo</option>
+                                <option value="correctivo">Correctivo</option>
+                            </select>
+                        </div>
+                        <div id="camposPreventivo" class="hidden">
+                            <label for="kilometrajePreventivo" class="block text-sm font-medium text-gray-700">Kilometraje (Preventivo)</label>
+                            <input type="number" id="kilometrajePreventivo" name="kilometrajePreventivo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                            <label for="descripcionPreventivo" class="block text-sm font-medium text-gray-700">Descripción (Preventivo)</label>
+                            <textarea id="descripcionPreventivo" name="descripcionPreventivo" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2"></textarea>
+                        </div>
+                        <div id="camposCorrectivo" class="hidden">
+                            <label for="descripcionCorrectivo" class="block text-sm font-medium text-gray-700">Descripción (Correctivo)</label>
+                            <textarea id="descripcionCorrectivo" name="descripcionCorrectivo" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2"></textarea>
+                            <label for="causaCorrectivo" class="block text-sm font-medium text-gray-700">Causa (Correctivo)</label>
+                            <input type="text" id="causaCorrectivo" name="causaCorrectivo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                        </div>
+                        <div>
+                            <label for="fechaMantenimiento" class="block text-sm font-medium text-gray-700">Fecha</label>
+                            <input type="date" id="fechaMantenimiento" name="fechaMantenimiento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="costoMantenimiento" class="block text-sm font-medium text-gray-700">Costo</label>
+                            <input type="number" id="costoMantenimiento" name="costoMantenimiento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="proveedorTaller" class="block text-sm font-medium text-gray-700">Proveedor/Taller</label>
+                            <input type="text" id="proveedorTaller" name="proveedorTaller" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="centroMantenimiento" class="block text-sm font-medium text-gray-700">Centro de Operaciones</label>
+                            <select id="centroMantenimiento" name="centroMantenimiento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="" disabled selected>Seleccione una opción</option>
+                                <option value="MSO">MSO</option>
+                                <option value="UN CCS">UN CCS</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Mantenimiento</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importMaintenanceFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importMaintenanceBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Mantenimientos</button>
+                        </div>
+                        <input type="text" id="searchMaintenanceInput" placeholder="Buscar mantenimiento..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportMaintenanceBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="maintenanceTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Tipo</th>
+                                    <th class="py-3 px-6 text-left">Fecha</th>
+                                    <th class="py-3 px-6 text-left">Costo</th>
+                                    <th class="py-3 px-6 text-left">Proveedor/Taller</th>
+                                    <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-left">Descripción</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="maintenanceTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Inspección Pre-Operacional -->
+                <div id="inspeccion" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Inspección Pre-Operacional</h2>
+                    <form id="inspectionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="inspectionId">
+                        <div>
+                            <label for="placaInspeccion" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input list="placasList" id="placaInspeccion" name="placaInspeccion" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="conductorInspeccion" class="block text-sm font-medium text-gray-700">Conductor</label>
+                            <input type="text" id="conductorInspeccion" name="conductorInspeccion" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="kilometrajeInspeccion" class="block text-sm font-medium text-gray-700">Kilometraje</label>
+                            <input type="number" id="kilometrajeInspeccion" name="kilometrajeInspeccion" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="fechaInspeccion" class="block text-sm font-medium text-gray-700">Fecha de Inspección</label>
+                            <input type="date" id="fechaInspeccion" name="fechaInspeccion" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div class="col-span-full">
+                            <h3 class="text-md font-semibold text-gray-800 my-2">Chequeo</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <label><input type="checkbox" name="Luces" value="ok" class="mr-2">Luces</label>
+                                <label><input type="checkbox" name="Limpiaparabrisas" value="ok" class="mr-2">Limpiaparabrisas</label>
+                                <label><input type="checkbox" name="Liquido_de_frenos" value="ok" class="mr-2">Líquido de frenos</label>
+                                <label><input type="checkbox" name="Frenos" value="ok" class="mr-2">Frenos</label>
+                                <label><input type="checkbox" name="Cauchos" value="ok" class="mr-2">Cauchos</label>
+                                <label><input type="checkbox" name="Retrovisores" value="ok" class="mr-2">Retrovisores</label>
+                                <label><input type="checkbox" name="Aire_acondicionado" value="ok" class="mr-2">Aire acondicionado</label>
+                                <label><input type="checkbox" name="Gato" value="ok" class="mr-2">Gato</label>
+                                <label><input type="checkbox" name="Triangulo" value="ok" class="mr-2">Triángulo</label>
+                                <label><input type="checkbox" name="Extintor" value="ok" class="mr-2">Extintor</label>
+                                <label><input type="checkbox" name="Caucho_de_repuesto" value="ok" class="mr-2">Caucho de repuesto</label>
+                                <label><input type="checkbox" name="Documentos" value="ok" class="mr-2">Documentos</label>
+                            </div>
+                        </div>
+                        <div class="col-span-full">
+                            <label for="observacionesInspeccion" class="block text-sm font-medium text-gray-700">Observaciones</label>
+                            <textarea id="observacionesInspeccion" name="observacionesInspeccion" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2"></textarea>
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Inspección</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importInspectionFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importInspectionBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Inspecciones</button>
+                        </div>
+                        <input type="text" id="searchInspectionInput" placeholder="Buscar inspección..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportInspectionBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="inspectionTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Conductor</th>
+                                    <th class="py-3 px-6 text-left">Kilometraje</th>
+                                    <th class="py-3 px-6 text-left">Fecha</th>
+                                    <th class="py-3 px-6 text-left">Chequeo</th>
+                                    <th class="py-3 px-6 text-left">Observaciones</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="inspectionTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Control de Combustible -->
+                <div id="combustible" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Control de Combustible</h2>
+                    <form id="fuelForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="fuelId">
+                        <div>
+                            <label for="placaCombustible" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input list="placasList" id="placaCombustible" name="placaCombustible" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="fechaCombustible" class="block text-sm font-medium text-gray-700">Fecha</label>
+                            <input type="date" id="fechaCombustible" name="fechaCombustible" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="litros" class="block text-sm font-medium text-gray-700">Litros</label>
+                            <input type="number" id="litros" name="litros" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="costoCombustible" class="block text-sm font-medium text-gray-700">Costo ($0.50/L)</label>
+                            <input type="number" id="costoCombustible" name="costoCombustible" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required readonly>
+                        </div>
+                        <div>
+                            <label for="centroCombustible" class="block text-sm font-medium text-gray-700">Centro de Operaciones</label>
+                            <select id="centroCombustible" name="centroCombustible" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="" disabled selected>Seleccione una opción</option>
+                                <option value="MSO">MSO</option>
+                                <option value="UN CCS">UN CCS</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Combustible</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importFuelFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importFuelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Combustible</button>
+                        </div>
+                        <input type="text" id="searchFuelInput" placeholder="Buscar combustible..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportFuelBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="fuelTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Fecha</th>
+                                    <th class="py-3 px-6 text-left">Litros</th>
+                                    <th class="py-3 px-6 text-left">Costo</th>
+                                    <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="fuelTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Siniestros -->
+                <div id="siniestros" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Registro de Siniestros</h2>
+                    <form id="siniestroForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="siniestroId">
+                        <div>
+                            <label for="placaSiniestro" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input list="placasList" id="placaSiniestro" name="placaSiniestro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="fechaHoraSiniestro" class="block text-sm font-medium text-gray-700">Fecha y Hora</label>
+                            <input type="datetime-local" id="fechaHoraSiniestro" name="fechaHoraSiniestro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="conductorSiniestro" class="block text-sm font-medium text-gray-700">Conductor</label>
+                            <input type="text" id="conductorSiniestro" name="conductorSiniestro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="polizaSiniestro" class="block text-sm font-medium text-gray-700">Número de Póliza</label>
+                            <input type="text" id="polizaSiniestro" name="polizaSiniestro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="lugarSiniestro" class="block text-sm font-medium text-gray-700">Lugar del Siniestro</label>
+                            <input type="text" id="lugarSiniestro" name="lugarSiniestro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div class="col-span-full">
+                            <label for="descripcionSiniestro" class="block text-sm font-medium text-gray-700">Descripción del Siniestro</label>
+                            <textarea id="descripcionSiniestro" name="descripcionSiniestro" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required></textarea>
+                        </div>
+                        <div>
+                            <label for="costoReparacion" class="block text-sm font-medium text-gray-700">Costo de Reparación</label>
+                            <input type="number" id="costoReparacion" name="costoReparacion" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="centroSiniestro" class="block text-sm font-medium text-gray-700">Centro de Operaciones</label>
+                            <select id="centroSiniestro" name="centroSiniestro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="" disabled selected>Seleccione una opción</option>
+                                <option value="MSO">MSO</option>
+                                <option value="UN CCS">UN CCS</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Siniestro</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importSiniestroFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importSiniestroBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Siniestros</button>
+                        </div>
+                        <input type="text" id="searchSiniestroInput" placeholder="Buscar siniestro..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportSiniestroBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="siniestroTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Fecha y Hora</th>
+                                    <th class="py-3 px-6 text-left">Conductor</th>
+                                    <th class="py-3 px-6 text-left">Póliza</th>
+                                    <th class="py-3 px-6 text-left">Lugar</th>
+                                    <th class="py-3 px-6 text-left">Descripción</th>
+                                    <th class="py-3 px-6 text-left">Costo Reparación</th>
+                                    <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="siniestroTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Lavado de autos -->
+                <div id="lavado" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Lavado de autos</h2>
+                    <form id="lavadoForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="lavadoId">
+                        <div>
+                            <label for="placaLavado" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input list="placasList" id="placaLavado" name="placaLavado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="fechaLavado" class="block text-sm font-medium text-gray-700">Fecha</label>
+                            <input type="date" id="fechaLavado" name="fechaLavado" class="mt-1 block w-full rounded-md border-gray-300 shadowSm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="costoLavado" class="block text-sm font-medium text-gray-700">Costo</label>
+                            <input type="number" id="costoLavado" name="costoLavado" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="centroLavado" class="block text-sm font-medium text-gray-700">Centro de Operaciones</label>
+                            <select id="centroLavado" name="centroLavado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="" disabled selected>Seleccione una opción</option>
+                                <option value="MSO">MSO</option>
+                                <option value="UN CCS">UN CCS</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Lavado</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importLavadoFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importLavadoBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Lavados</button>
+                        </div>
+                        <input type="text" id="searchLavadoInput" placeholder="Buscar lavado..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportLavadoBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="lavadoTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Fecha</th>
+                                    <th class="py-3 px-6 text-left">Costo</th>
+                                    <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="lavadoTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Gasoil Head End - MODIFICADA -->
+                <div id="gasoil-head-end" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Gasoil Head End</h2>
+                    <form id="gasoilForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <input type="hidden" id="gasoilId">
+                        <div>
+                            <label for="placaGasoil" class="block text-sm font-medium text-gray-700">Placa</label>
+                            <input list="placasList" id="placaGasoil" name="placaGasoil" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="fechaGasoil" class="block text-sm font-medium text-gray-700">Fecha</label>
+                            <input type="date" id="fechaGasoil" name="fechaGasoil" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="litrosGasoil" class="block text-sm font-medium text-gray-700">Litros</label>
+                            <input type="number" id="litrosGasoil" name="litrosGasoil" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="fleteGasoil" class="block text-sm font-medium text-gray-700">Flete</label>
+                            <input type="number" id="fleteGasoil" name="fleteGasoil" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="costoGasoil" class="block text-sm font-medium text-gray-700">Costo Total ($0.48/L + Flete)</label>
+                            <input type="number" id="costoGasoil" name="costoGasoil" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required readonly>
+                        </div>
+                        <div>
+                            <label for="centroGasoil" class="block text-sm font-medium text-gray-700">Centro de Operaciones</label>
+                            <select id="centroGasoil" name="centroGasoil" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="" disabled selected>Seleccione una opción</option>
+                                <option value="MSO">MSO</option>
+                                <option value="UN CCS">UN CCS</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">Guardar Gasoil</button>
+                        </div>
+                    </form>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center">
+                            <input type="file" id="importGasoilFile" accept=".xlsx, .xls, .csv" class="hidden">
+                            <button id="importGasoilBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Gasoil</button>
+                        </div>
+                        <input type="text" id="searchGasoilInput" placeholder="Buscar gasoil..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="exportGasoilBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200" id="gasoilTable">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Placa</th>
+                                    <th class="py-3 px-6 text-left">Fecha</th>
+                                    <th class="py-3 px-6 text-left">Litros</th>
+                                    <th class="py-3 px-6 text-left">Flete</th>
+                                    <th class="py-3 px-6 text-left">Costo Total</th>
+                                    <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light" id="gasoilTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Reportes y Estadísticas - MODIFICADA -->
+                <div id="reportes" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-inter-primary mb-4">Reportes y Estadísticas</h2>
+                    
+                    <!-- Filtros -->
+                    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Filtros</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="reportYear" class="block text-sm font-medium text-gray-700">Año</label>
+                                <select id="reportYear" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                                    <!-- Se llenará dinámicamente con JavaScript -->
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reportMonth" class="block text-sm font-medium text-gray-700">Mes</label>
+                                <select id="reportMonth" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                                    <option value="all">Todos los meses</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reportCenter" class="block text-sm font-medium text-gray-700">Centro</label>
+                                <select id="reportCenter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
+                                    <option value="all">Todos los centros</option>
+                                    <option value="MSO">MSO</option>
+                                    <option value="UN CCS">UN CCS</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="applyFilters" class="mt-4 bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">
+                            Aplicar Filtros
+                        </button>
+                    </div>
+
+                    <!-- Resumen de Gastos por Centro -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total MSO</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalMSO">$0</p>
+                            <p class="text-sm text-gray-600 mt-1" id="msoTrend"></p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total UN CCS</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalUNCCS">$0</p>
+                            <p class="text-sm text-gray-600 mt-1" id="unccsTrend"></p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Mayor Gasto</h3>
+                            <p class="text-2xl font-bold text-red-600" id="highestSpender">-</p>
+                            <p class="text-sm text-gray-600 mt-1" id="highestAmount">$0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Menor Gasto</h3>
+                            <p class="text-2xl font-bold text-green-600" id="lowestSpender">-</p>
+                            <p class="text-sm text-gray-600 mt-1" id="lowestAmount">$0</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos Comparativos -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Comparativa Mensual MSO vs UN CCS</h3>
+                            <canvas id="monthlyComparisonChart" width="400" height="300"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución de Gastos por Categoría</h3>
+                            <canvas id="expenseDistributionChart" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gastos Mensuales Detallados -->
+                    <div class="grid grid-cols-1 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Gastos Mensuales Detallados por Vehículo - MSO</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border border-gray-200" id="msoMonthlyTable">
+                                    <thead>
+                                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                            <th class="py-3 px-6 text-left">Vehículo</th>
+                                            <th class="py-3 px-6 text-left">Ene</th>
+                                            <th class="py-3 px-6 text-left">Feb</th>
+                                            <th class="py-3 px-6 text-left">Mar</th>
+                                            <th class="py-3 px-6 text-left">Abr</th>
+                                            <th class="py-3 px-6 text-left">May</th>
+                                            <th class="py-3 px-6 text-left">Jun</th>
+                                            <th class="py-3 px-6 text-left">Jul</th>
+                                            <th class="py-3 px-6 text-left">Ago</th>
+                                            <th class="py-3 px-6 text-left">Sep</th>
+                                            <th class="py-3 px-6 text-left">Oct</th>
+                                            <th class="py-3 px-6 text-left">Nov</th>
+                                            <th class="py-3 px-6 text-left">Dic</th>
+                                            <th class="py-3 px-6 text-left">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 text-sm font-light" id="msoMonthlyTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Gastos Mensuales Detallados por Vehículo - UN CCS</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border border-gray-200" id="unccsMonthlyTable">
+                                    <thead>
+                                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                            <th class="py-3 px-6 text-left">Vehículo</th>
+                                            <th class="py-3 px-6 text-left">Ene</th>
+                                            <th class="py-3 px-6 text-left">Feb</th>
+                                            <th class="py-3 px-6 text-left">Mar</th>
+                                            <th class="py-3 px-6 text-left">Abr</th>
+                                            <th class="py-3 px-6 text-left">May</th>
+                                            <th class="py-3 px-6 text-left">Jun</th>
+                                            <th class="py-3 px-6 text-left">Jul</th>
+                                            <th class="py-3 px-6 text-left">Ago</th>
+                                            <th class="py-3 px-6 text-left">Sep</th>
+                                            <th class="py-3 px-6 text-left">Oct</th>
+                                            <th class="py-3 px-6 text-left">Nov</th>
+                                            <th class="py-3 px-6 text-left">Dic</th>
+                                            <th class="py-3 px-6 text-left">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 text-sm font-light" id="unccsMonthlyTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Combustible por Vehículo -->
+                    <div class="grid grid-cols-1 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Consumo de Combustible por Vehículo - MSO</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border border-gray-200" id="msoFuelTable">
+                                    <thead>
+                                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                            <th class="py-3 px-6 text-left">Vehículo</th>
+                                            <th class="py-3 px-6 text-left">Ene (L)</th>
+                                            <th class="py-3 px-6 text-left">Feb (L)</th>
+                                            <th class="py-3 px-6 text-left">Mar (L)</th>
+                                            <th class="py-3 px-6 text-left">Abr (L)</th>
+                                            <th class="py-3 px-6 text-left">May (L)</th>
+                                            <th class="py-3 px-6 text-left">Jun (L)</th>
+                                            <th class="py-3 px-6 text-left">Jul (L)</th>
+                                            <th class="py-3 px-6 text-left">Ago (L)</th>
+                                            <th class="py-3 px-6 text-left">Sep (L)</th>
+                                            <th class="py-3 px-6 text-left">Oct (L)</th>
+                                            <th class="py-3 px-6 text-left">Nov (L)</th>
+                                            <th class="py-3 px-6 text-left">Dic (L)</th>
+                                            <th class="py-3 px-6 text-left">Total (L)</th>
+                                            <th class="py-3 px-6 text-left">Costo Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 text-sm font-light" id="msoFuelTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Consumo de Combustible por Vehículo - UN CCS</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border border-gray-200" id="unccsFuelTable">
+                                    <thead>
+                                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                            <th class="py-3 px-6 text-left">Vehículo</th>
+                                            <th class="py-3 px-6 text-left">Ene (L)</th>
+                                            <th class="py-3 px-6 text-left">Feb (L)</th>
+                                            <th class="py-3 px-6 text-left">Mar (L)</th>
+                                            <th class="py-3 px-6 text-left">Abr (L)</th>
+                                            <th class="py-3 px-6 text-left">May (L)</th>
+                                            <th class="py-3 px-6 text-left">Jun (L)</th>
+                                            <th class="py-3 px-6 text-left">Jul (L)</th>
+                                            <th class="py-3 px-6 text-left">Ago (L)</th>
+                                            <th class="py-3 px-6 text-left">Sep (L)</th>
+                                            <th class="py-3 px-6 text-left">Oct (L)</th>
+                                            <th class="py-3 px-6 text-left">Nov (L)</th>
+                                            <th class="py-3 px-6 text-left">Dic (L)</th>
+                                            <th class="py-3 px-6 text-left">Total (L)</th>
+                                            <th class="py-3 px-6 text-left">Costo Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 text-sm font-light" id="unccsFuelTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen Anual -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Resumen Anual Comparativo</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">MSO - Desglose Anual</h4>
+                                <div id="msoAnnualBreakdown" class="space-y-2">
+                                    <!-- Se llenará dinámicamente -->
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">UN CCS - Desglose Anual</h4>
+                                <div id="unccsAnnualBreakdown" class="space-y-2">
+                                    <!-- Se llenará dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contadores Originales (mantenidos para compatibilidad) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total de Vehículos</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalVehicles">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total de Mantenimientos</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalMaintenances">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total de Combustible</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalFuel">0 L</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total de Siniestros</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalSiniestros">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total de Lavados</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalLavados">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total de Gasoil</h3>
+                            <p class="text-3xl font-bold text-inter-primary" id="totalGasoil">0 L</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Variables globales para todas las pestañas
+        let vehicles = JSON.parse(localStorage.getItem('vehicles')) || [];
+        let maintenances = JSON.parse(localStorage.getItem('maintenances')) || [];
+        let inspections = JSON.parse(localStorage.getItem('inspections')) || [];
+        let fuelRecords = JSON.parse(localStorage.getItem('fuelRecords')) || [];
+        let siniestros = JSON.parse(localStorage.getItem('siniestros')) || [];
+        let lavados = JSON.parse(localStorage.getItem('lavados')) || [];
+        let gasoilRecords = JSON.parse(localStorage.getItem('gasoilRecords')) || [];
+
+        // Inicialización - MODIFICADA
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTabs();
+            loadAllData();
+            setupEventListeners();
+            setupImportButtons();
+            setupYearSelector(); // Nueva función agregada
+            updateReports();
+        });
+
+        // Nueva función para configurar el selector de año dinámico
+        function setupYearSelector() {
+            const yearSelect = document.getElementById('reportYear');
+            if (!yearSelect) return;
+            
+            const currentYear = new Date().getFullYear();
+            yearSelect.innerHTML = '';
+            
+            // Agregar años desde 2022 hasta el año actual
+            for (let year = 2022; year <= currentYear; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                // Seleccionar el año actual por defecto
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // Funciones de navegación por pestañas - MODIFICADA
+        function initializeTabs() {
+            const tabLinks = document.querySelectorAll('.tab-link');
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab-id');
+                    switchTab(tabId);
+                });
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.querySelector(`[data-tab-id="${tabId}"]`).classList.add('active');
+            
+            if (tabId === 'reportes') {
+                setupYearSelector(); // Asegurar que los años se carguen al cambiar a reportes
+                updateReports();
+            }
+        }
+
+        // El resto del código JavaScript permanece exactamente igual...
+        // Cargar todos los datos
+        function loadAllData() {
+            loadVehicleData();
+            loadMaintenanceData();
+            loadInspectionData();
+            loadFuelData();
+            loadSiniestroData();
+            loadLavadoData();
+            loadGasoilData();
+        }
+
+        // Funciones para Vehículos
+        function loadVehicleData() {
+            const tbody = document.getElementById('vehicleTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            vehicles.forEach((vehicle, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${vehicle.placa}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.marca}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.modelo}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.anio}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.centroOperaciones}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.capacidadTanque || 'N/A'}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.departamentoAsignado || 'N/A'}</td>
+                    <td class="py-3 px-6 text-left">${vehicle.estado || 'N/A'}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editVehicle(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteVehicle(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            updatePlacasList();
+        }
+
+        // Funciones para Mantenimientos
+        function loadMaintenanceData() {
+            const tbody = document.getElementById('maintenanceTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            maintenances.forEach((maintenance, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${maintenance.placa}</td>
+                    <td class="py-3 px-6 text-left">${maintenance.tipo}</td>
+                    <td class="py-3 px-6 text-left">${maintenance.fecha}</td>
+                    <td class="py-3 px-6 text-left">$${maintenance.costo}</td>
+                    <td class="py-3 px-6 text-left">${maintenance.proveedor}</td>
+                    <td class="py-3 px-6 text-left">${maintenance.centro}</td>
+                    <td class="py-3 px-6 text-left">${maintenance.descripcion || 'N/A'}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editMaintenance(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteMaintenance(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Funciones para Inspecciones
+        function loadInspectionData() {
+            const tbody = document.getElementById('inspectionTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            inspections.forEach((inspection, index) => {
+                const checklistItems = Object.entries(inspection.chequeo || {})
+                    .filter(([key, value]) => value === 'ok')
+                    .map(([key]) => key)
+                    .join(', ');
+                    
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${inspection.placa}</td>
+                    <td class="py-3 px-6 text-left">${inspection.conductor}</td>
+                    <td class="py-3 px-6 text-left">${inspection.kilometraje}</td>
+                    <td class="py-3 px-6 text-left">${inspection.fecha}</td>
+                    <td class="py-3 px-6 text-left">${checklistItems}</td>
+                    <td class="py-3 px-6 text-left">${inspection.observaciones || 'N/A'}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editInspection(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteInspection(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Funciones para Combustible
+        function loadFuelData() {
+            const tbody = document.getElementById('fuelTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            fuelRecords.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${record.placa}</td>
+                    <td class="py-3 px-6 text-left">${record.fecha}</td>
+                    <td class="py-3 px-6 text-left">${record.litros} L</td>
+                    <td class="py-3 px-6 text-left">$${record.costo}</td>
+                    <td class="py-3 px-6 text-left">${record.centro}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editFuel(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteFuel(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Funciones para Siniestros
+        function loadSiniestroData() {
+            const tbody = document.getElementById('siniestroTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            siniestros.forEach((siniestro, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${siniestro.placa}</td>
+                    <td class="py-3 px-6 text-left">${siniestro.fechaHora}</td>
+                    <td class="py-3 px-6 text-left">${siniestro.conductor}</td>
+                    <td class="py-3 px-6 text-left">${siniestro.poliza}</td>
+                    <td class="py-3 px-6 text-left">${siniestro.lugar}</td>
+                    <td class="py-3 px-6 text-left">${siniestro.descripcion.substring(0, 50)}...</td>
+                    <td class="py-3 px-6 text-left">$${siniestro.costoReparacion}</td>
+                    <td class="py-3 px-6 text-left">${siniestro.centro}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editSiniestro(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteSiniestro(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Funciones para Lavados
+        function loadLavadoData() {
+            const tbody = document.getElementById('lavadoTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            lavados.forEach((lavado, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${lavado.placa}</td>
+                    <td class="py-3 px-6 text-left">${lavado.fecha}</td>
+                    <td class="py-3 px-6 text-left">$${lavado.costo}</td>
+                    <td class="py-3 px-6 text-left">${lavado.centro}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editLavado(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteLavado(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Funciones para Gasoil - MODIFICADA
+        function loadGasoilData() {
+            const tbody = document.getElementById('gasoilTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            gasoilRecords.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${record.placa}</td>
+                    <td class="py-3 px-6 text-left">${record.fecha}</td>
+                    <td class="py-3 px-6 text-left">${record.litros} L</td>
+                    <td class="py-3 px-6 text-left">$${record.flete}</td>
+                    <td class="py-3 px-6 text-left">$${record.costo}</td>
+                    <td class="py-3 px-6 text-left">${record.centro}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editGasoil(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="deleteGasoil(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // FUNCIONES DE EDICIÓN Y ELIMINACIÓN PARA TODAS LAS PESTAÑAS
+
+        // Vehículos
+        window.editVehicle = function(index) {
+            const vehicle = vehicles[index];
+            document.getElementById('vehicleId').value = index;
+            document.getElementById('placa').value = vehicle.placa;
+            document.getElementById('marca').value = vehicle.marca;
+            document.getElementById('modelo').value = vehicle.modelo;
+            document.getElementById('anio').value = vehicle.anio;
+            document.getElementById('centroOperaciones').value = vehicle.centroOperaciones;
+            document.getElementById('capacidadTanque').value = vehicle.capacidadTanque || '';
+            document.getElementById('departamentoAsignado').value = vehicle.departamentoAsignado || '';
+            document.getElementById('estado').value = vehicle.estado || '';
+        };
+
+        window.deleteVehicle = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este vehículo?')) {
+                vehicles.splice(index, 1);
+                localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                loadVehicleData();
+                updateReports();
+            }
+        };
+
+        // Mantenimientos
+        window.editMaintenance = function(index) {
+            const maintenance = maintenances[index];
+            document.getElementById('maintenanceId').value = index;
+            document.getElementById('placaMantenimiento').value = maintenance.placa;
+            document.getElementById('tipoMantenimiento').value = maintenance.tipo;
+            document.getElementById('fechaMantenimiento').value = maintenance.fecha;
+            document.getElementById('costoMantenimiento').value = maintenance.costo;
+            document.getElementById('proveedorTaller').value = maintenance.proveedor;
+            document.getElementById('centroMantenimiento').value = maintenance.centro;
+
+            // Mostrar campos según el tipo
+            document.getElementById('tipoMantenimiento').dispatchEvent(new Event('change'));
+            
+            if (maintenance.tipo === 'preventivo') {
+                document.getElementById('kilometrajePreventivo').value = maintenance.kilometraje || '';
+                document.getElementById('descripcionPreventivo').value = maintenance.descripcion || '';
+            } else {
+                document.getElementById('descripcionCorrectivo').value = maintenance.descripcion || '';
+                document.getElementById('causaCorrectivo').value = maintenance.causa || '';
+            }
+        };
+
+        window.deleteMaintenance = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este mantenimiento?')) {
+                maintenances.splice(index, 1);
+                localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                loadMaintenanceData();
+                updateReports();
+            }
+        };
+
+        // Inspecciones
+        window.editInspection = function(index) {
+            const inspection = inspections[index];
+            document.getElementById('inspectionId').value = index;
+            document.getElementById('placaInspeccion').value = inspection.placa;
+            document.getElementById('conductorInspeccion').value = inspection.conductor;
+            document.getElementById('kilometrajeInspeccion').value = inspection.kilometraje;
+            document.getElementById('fechaInspeccion').value = inspection.fecha;
+            document.getElementById('observacionesInspeccion').value = inspection.observaciones || '';
+
+            // Restaurar checkboxes
+            const checkboxes = document.querySelectorAll('#inspectionForm input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = inspection.chequeo[checkbox.name] === 'ok';
+            });
+        };
+
+        window.deleteInspection = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar esta inspección?')) {
+                inspections.splice(index, 1);
+                localStorage.setItem('inspections', JSON.stringify(inspections));
+                loadInspectionData();
+            }
+        };
+
+        // Combustible
+        window.editFuel = function(index) {
+            const record = fuelRecords[index];
+            document.getElementById('fuelId').value = index;
+            document.getElementById('placaCombustible').value = record.placa;
+            document.getElementById('fechaCombustible').value = record.fecha;
+            document.getElementById('litros').value = record.litros;
+            document.getElementById('costoCombustible').value = record.costo;
+            document.getElementById('centroCombustible').value = record.centro;
+        };
+
+        window.deleteFuel = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este registro de combustible?')) {
+                fuelRecords.splice(index, 1);
+                localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
+                loadFuelData();
+                updateReports();
+            }
+        };
+
+        // Siniestros
+        window.editSiniestro = function(index) {
+            const siniestro = siniestros[index];
+            document.getElementById('siniestroId').value = index;
+            document.getElementById('placaSiniestro').value = siniestro.placa;
+            document.getElementById('fechaHoraSiniestro').value = siniestro.fechaHora;
+            document.getElementById('conductorSiniestro').value = siniestro.conductor;
+            document.getElementById('polizaSiniestro').value = siniestro.poliza;
+            document.getElementById('lugarSiniestro').value = siniestro.lugar;
+            document.getElementById('descripcionSiniestro').value = siniestro.descripcion;
+            document.getElementById('costoReparacion').value = siniestro.costoReparacion;
+            document.getElementById('centroSiniestro').value = siniestro.centro;
+        };
+
+        window.deleteSiniestro = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este siniestro?')) {
+                siniestros.splice(index, 1);
+                localStorage.setItem('siniestros', JSON.stringify(siniestros));
+                loadSiniestroData();
+                updateReports();
+            }
+        };
+
+        // Lavados
+        window.editLavado = function(index) {
+            const lavado = lavados[index];
+            document.getElementById('lavadoId').value = index;
+            document.getElementById('placaLavado').value = lavado.placa;
+            document.getElementById('fechaLavado').value = lavado.fecha;
+            document.getElementById('costoLavado').value = lavado.costo;
+            document.getElementById('centroLavado').value = lavado.centro;
+        };
+
+        window.deleteLavado = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este lavado?')) {
+                lavados.splice(index, 1);
+                localStorage.setItem('lavados', JSON.stringify(lavados));
+                loadLavadoData();
+                updateReports();
+            }
+        };
+
+        // Gasoil - MODIFICADA
+        window.editGasoil = function(index) {
+            const record = gasoilRecords[index];
+            document.getElementById('gasoilId').value = index;
+            document.getElementById('placaGasoil').value = record.placa;
+            document.getElementById('fechaGasoil').value = record.fecha;
+            document.getElementById('litrosGasoil').value = record.litros;
+            document.getElementById('fleteGasoil').value = record.flete;
+            document.getElementById('costoGasoil').value = record.costo;
+            document.getElementById('centroGasoil').value = record.centro;
+        };
+
+        window.deleteGasoil = function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este registro de gasoil?')) {
+                gasoilRecords.splice(index, 1);
+                localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
+                loadGasoilData();
+                updateReports();
+            }
+        };
+
+        // FUNCIONES DE IMPORTACIÓN PARA TODAS LAS PESTAÑAS
+        function setupImportButtons() {
+            // Vehículos
+            setupImportButton('importVehicleBtn', 'importVehicleFile', 'vehicles');
+            // Mantenimientos
+            setupImportButton('importMaintenanceBtn', 'importMaintenanceFile', 'maintenances');
+            // Inspecciones
+            setupImportButton('importInspectionBtn', 'importInspectionFile', 'inspections');
+            // Combustible
+            setupImportButton('importFuelBtn', 'importFuelFile', 'fuel');
+            // Siniestros
+            setupImportButton('importSiniestroBtn', 'importSiniestroFile', 'siniestros');
+            // Lavados
+            setupImportButton('importLavadoBtn', 'importLavadoFile', 'lavados');
+            // Gasoil
+            setupImportButton('importGasoilBtn', 'importGasoilFile', 'gasoil');
+        }
+
+        function setupImportButton(buttonId, fileInputId, type) {
+            const button = document.getElementById(buttonId);
+            const fileInput = document.getElementById(fileInputId);
+            
+            if (button && fileInput) {
+                button.addEventListener('click', function() {
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', function(e) {
+                    importFromExcel(e.target.files[0], type);
+                });
+            }
+        }
+
+        // Función de importación mejorada para todos los tipos
+        function importFromExcel(file, type) {
+            if (!file) {
+                alert('No se seleccionó ningún archivo.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (jsonData.length === 0) {
+                        alert('El archivo está vacío o no tiene el formato correcto.');
+                        return;
+                    }
+
+                    let importedData = [];
+                    let validationErrors = [];
+
+                    jsonData.forEach((row, index) => {
+                        try {
+                            let item = processRowData(row, type, index + 2);
+                            if (item) {
+                                importedData.push(item);
+                            }
+                        } catch (error) {
+                            validationErrors.push(`Fila ${index + 2}: ${error.message}`);
+                        }
+                    });
+
+                    if (validationErrors.length > 0) {
+                        alert('Errores de validación:\n' + validationErrors.join('\n'));
+                        return;
+                    }
+
+                    if (confirm(`¿Desea importar ${importedData.length} registros de ${type}?`)) {
+                        saveImportedData(type, importedData);
+                        alert(`Importación completada: ${importedData.length} registros importados exitosamente.`);
+                    }
+                } catch (error) {
+                    console.error('Error en importación:', error);
+                    alert('Error al importar el archivo: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function(error) {
+                alert('Error al leer el archivo seleccionado.');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processRowData(row, type, rowNumber) {
+            switch (type) {
+                case 'vehicles':
+                    return processVehicleRow(row, rowNumber);
+                case 'maintenances':
+                    return processMaintenanceRow(row, rowNumber);
+                case 'inspections':
+                    return processInspectionRow(row, rowNumber);
+                case 'fuel':
+                    return processFuelRow(row, rowNumber);
+                case 'siniestros':
+                    return processSiniestroRow(row, rowNumber);
+                case 'lavados':
+                    return processLavadoRow(row, rowNumber);
+                case 'gasoil':
+                    return processGasoilRow(row, rowNumber);
+                default:
+                    throw new Error(`Tipo no soportado: ${type}`);
+            }
+        }
+
+        function processVehicleRow(row, rowNumber) {
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                marca: String(row.Marca || row.marca || '').trim(),
+                modelo: String(row.Modelo || row.modelo || '').trim(),
+                anio: parseInt(row.Año || row.anio || row.Año || '0'),
+                centroOperaciones: String(row['Centro de Operaciones'] || row.centroOperaciones || row.Centro || '').trim(),
+                capacidadTanque: parseFloat(row['Capacidad Tanque'] || row.capacidadTanque || row.Capacidad || '0'),
+                departamentoAsignado: String(row['Departamento Asignado'] || row.departamentoAsignado || row.Departamento || '').trim(),
+                estado: String(row.Estado || row.estado || 'Operativo').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.marca) throw new Error('La marca es requerida');
+            if (!item.modelo) throw new Error('El modelo es requerido');
+            
+            return item;
+        }
+
+        function processMaintenanceRow(row, rowNumber) {
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                tipo: String(row.Tipo || row.tipo || row['Tipo de Mantenimiento'] || '').trim(),
+                fecha: String(row.Fecha || row.fecha || '').trim(),
+                costo: parseFloat(row.Costo || row.costo || '0'),
+                proveedor: String(row.Proveedor || row.proveedor || row.Taller || '').trim(),
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim(),
+                kilometraje: row.Kilometraje || row.kilometraje || '',
+                descripcion: String(row.Descripción || row.descripcion || '').trim(),
+                causa: String(row.Causa || row.causa || '').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.tipo) throw new Error('El tipo de mantenimiento es requerido');
+            if (!item.fecha) throw new Error('La fecha es requerida');
+            
+            return item;
+        }
+
+        function processInspectionRow(row, rowNumber) {
+            const chequeo = {};
+            const chequeoFields = ['Luces', 'Limpiaparabrisas', 'Liquido_de_frenos', 'Frenos', 'Cauchos', 'Retrovisores', 'Aire_acondicionado', 'Gato', 'Triangulo', 'Extintor', 'Caucho_de_repuesto', 'Documentos'];
+            
+            chequeoFields.forEach(field => {
+                chequeo[field] = row[field] === 'ok' ? 'ok' : 'no';
+            });
+
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                conductor: String(row.Conductor || row.conductor || '').trim(),
+                kilometraje: parseFloat(row.Kilometraje || row.kilometraje || '0'),
+                fecha: String(row.Fecha || row.fecha || '').trim(),
+                chequeo: chequeo,
+                observaciones: String(row.Observaciones || row.observaciones || '').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.conductor) throw new Error('El conductor es requerido');
+            
+            return item;
+        }
+
+        function processFuelRow(row, rowNumber) {
+            const litros = parseFloat(row.Litros || row.litros || '0');
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                fecha: String(row.Fecha || row.fecha || '').trim(),
+                litros: litros,
+                costo: litros * 0.50, // Calculado automáticamente
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.fecha) throw new Error('La fecha es requerida');
+            
+            return item;
+        }
+
+        function processSiniestroRow(row, rowNumber) {
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                fechaHora: String(row['Fecha y Hora'] || row.fechaHora || row.Fecha || '').trim(),
+                conductor: String(row.Conductor || row.conductor || '').trim(),
+                poliza: String(row.Póliza || row.poliza || row['Número de Póliza'] || '').trim(),
+                lugar: String(row.Lugar || row.lugar || row['Lugar del Siniestro'] || '').trim(),
+                descripcion: String(row.Descripción || row.descripcion || row['Descripción del Siniestro'] || '').trim(),
+                costoReparacion: parseFloat(row['Costo de Reparación'] || row.costoReparacion || row.Costo || '0'),
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.fechaHora) throw new Error('La fecha y hora son requeridas');
+            
+            return item;
+        }
+
+        function processLavadoRow(row, rowNumber) {
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                fecha: String(row.Fecha || row.fecha || '').trim(),
+                costo: parseFloat(row.Costo || row.costo || '0'),
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.fecha) throw new Error('La fecha es requerida');
+            
+            return item;
+        }
+
+        // Gasoil - MODIFICADA
+        function processGasoilRow(row, rowNumber) {
+            const litros = parseFloat(row.Litros || row.litros || '0');
+            const flete = parseFloat(row.Flete || row.flete || '0');
+            const item = {
+                placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
+                fecha: String(row.Fecha || row.fecha || '').trim(),
+                litros: litros,
+                flete: flete,
+                costo: (litros * 0.48) + flete,
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+            };
+            
+            if (!item.placa) throw new Error('La placa es requerida');
+            if (!item.fecha) throw new Error('La fecha es requerida');
+            
+            return item;
+        }
+
+        function saveImportedData(type, importedData) {
+            switch (type) {
+                case 'vehicles':
+                    vehicles = [...vehicles, ...importedData];
+                    localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                    loadVehicleData();
+                    break;
+                case 'maintenances':
+                    maintenances = [...maintenances, ...importedData];
+                    localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                    loadMaintenanceData();
+                    break;
+                case 'inspections':
+                    inspections = [...inspections, ...importedData];
+                    localStorage.setItem('inspections', JSON.stringify(inspections));
+                    loadInspectionData();
+                    break;
+                case 'fuel':
+                    fuelRecords = [...fuelRecords, ...importedData];
+                    localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
+                    loadFuelData();
+                    break;
+                case 'siniestros':
+                    siniestros = [...siniestros, ...importedData];
+                    localStorage.setItem('siniestros', JSON.stringify(siniestros));
+                    loadSiniestroData();
+                    break;
+                case 'lavados':
+                    lavados = [...lavados, ...importedData];
+                    localStorage.setItem('lavados', JSON.stringify(lavados));
+                    loadLavadoData();
+                    break;
+                case 'gasoil':
+                    gasoilRecords = [...gasoilRecords, ...importedData];
+                    localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
+                    loadGasoilData();
+                    break;
+            }
+            updateReports();
+        }
+
+        // Funciones de utilidad
+        function updatePlacasList() {
+            const placasList = document.getElementById('placasList');
+            if (placasList) {
+                placasList.innerHTML = '';
+                vehicles.forEach(vehicle => {
+                    const option = document.createElement('option');
+                    option.value = vehicle.placa;
+                    placasList.appendChild(option);
+                });
+            }
+        }
+
+        // Configuración de event listeners para formularios
+        function setupEventListeners() {
+            setupVehicleForm();
+            setupMaintenanceForm();
+            setupInspectionForm();
+            setupFuelForm();
+            setupSiniestroForm();
+            setupLavadoForm();
+            setupGasoilForm();
+            setupSearchFunctionality();
+            setupReportEventListeners();
+            setupExportButtons();
+        }
+
+        function setupVehicleForm() {
+            const form = document.getElementById('vehicleForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('vehicleId').value;
+                    const vehicle = {
+                        placa: document.getElementById('placa').value,
+                        marca: document.getElementById('marca').value,
+                        modelo: document.getElementById('modelo').value,
+                        anio: document.getElementById('anio').value,
+                        centroOperaciones: document.getElementById('centroOperaciones').value,
+                        capacidadTanque: document.getElementById('capacidadTanque').value,
+                        departamentoAsignado: document.getElementById('departamentoAsignado').value,
+                        estado: document.getElementById('estado').value
+                    };
+
+                    if (id === '') {
+                        vehicles.push(vehicle);
+                    } else {
+                        vehicles[id] = vehicle;
+                    }
+
+                    localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                    loadVehicleData();
+                    this.reset();
+                    document.getElementById('vehicleId').value = '';
+                    updateReports();
+                });
+            }
+
+            // Botón eliminar todos los vehículos
+            const deleteBtn = document.getElementById('deleteMassiveBtn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    if (confirm('¿Está seguro de que desea eliminar TODOS los vehículos? Esta acción no se puede deshacer.')) {
+                        vehicles = [];
+                        localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                        loadVehicleData();
+                        updateReports();
+                    }
+                });
+            }
+        }
+
+        function setupMaintenanceForm() {
+            const form = document.getElementById('maintenanceForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('maintenanceId').value;
+                    const tipo = document.getElementById('tipoMantenimiento').value;
+                    
+                    const maintenance = {
+                        placa: document.getElementById('placaMantenimiento').value,
+                        tipo: tipo,
+                        fecha: document.getElementById('fechaMantenimiento').value,
+                        costo: document.getElementById('costoMantenimiento').value,
+                        proveedor: document.getElementById('proveedorTaller').value,
+                        centro: document.getElementById('centroMantenimiento').value
+                    };
+
+                    if (tipo === 'preventivo') {
+                        maintenance.kilometraje = document.getElementById('kilometrajePreventivo').value;
+                        maintenance.descripcion = document.getElementById('descripcionPreventivo').value;
+                    } else {
+                        maintenance.descripcion = document.getElementById('descripcionCorrectivo').value;
+                        maintenance.causa = document.getElementById('causaCorrectivo').value;
+                    }
+
+                    if (id === '') {
+                        maintenances.push(maintenance);
+                    } else {
+                        maintenances[id] = maintenance;
+                    }
+
+                    localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                    loadMaintenanceData();
+                    this.reset();
+                    document.getElementById('maintenanceId').value = '';
+                    updateReports();
+                });
+
+                // Mostrar/ocultar campos según tipo de mantenimiento
+                const tipoSelect = document.getElementById('tipoMantenimiento');
+                if (tipoSelect) {
+                    tipoSelect.addEventListener('change', function() {
+                        const tipo = this.value;
+                        document.getElementById('camposPreventivo').classList.add('hidden');
+                        document.getElementById('camposCorrectivo').classList.add('hidden');
+                        
+                        if (tipo === 'preventivo') {
+                            document.getElementById('camposPreventivo').classList.remove('hidden');
+                        } else if (tipo === 'correctivo') {
+                            document.getElementById('camposCorrectivo').classList.remove('hidden');
+                        }
+                    });
+                }
+            }
+        }
+
+        function setupInspectionForm() {
+            const form = document.getElementById('inspectionForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('inspectionId').value;
+                    
+                    const chequeo = {};
+                    document.querySelectorAll('#inspectionForm input[type="checkbox"]').forEach(checkbox => {
+                        chequeo[checkbox.name] = checkbox.checked ? 'ok' : 'no';
+                    });
+
+                    const inspection = {
+                        placa: document.getElementById('placaInspeccion').value,
+                        conductor: document.getElementById('conductorInspeccion').value,
+                        kilometraje: document.getElementById('kilometrajeInspeccion').value,
+                        fecha: document.getElementById('fechaInspeccion').value,
+                        chequeo: chequeo,
+                        observaciones: document.getElementById('observacionesInspeccion').value
+                    };
+
+                    if (id === '') {
+                        inspections.push(inspection);
+                    } else {
+                        inspections[id] = inspection;
+                    }
+
+                    localStorage.setItem('inspections', JSON.stringify(inspections));
+                    loadInspectionData();
+                    this.reset();
+                    document.getElementById('inspectionId').value = '';
+                });
+            }
+        }
+
+        function setupFuelForm() {
+            const form = document.getElementById('fuelForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('fuelId').value;
+                    const litros = parseFloat(document.getElementById('litros').value) || 0;
+                    const fuel = {
+                        placa: document.getElementById('placaCombustible').value,
+                        fecha: document.getElementById('fechaCombustible').value,
+                        litros: litros,
+                        costo: litros * 0.50,
+                        centro: document.getElementById('centroCombustible').value
+                    };
+
+                    if (id === '') {
+                        fuelRecords.push(fuel);
+                    } else {
+                        fuelRecords[id] = fuel;
+                    }
+
+                    localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
+                    loadFuelData();
+                    this.reset();
+                    document.getElementById('fuelId').value = '';
+                    updateReports();
+                });
+
+                // Calcular costo automáticamente
+                const litrosInput = document.getElementById('litros');
+                if (litrosInput) {
+                    litrosInput.addEventListener('input', function() {
+                        const litros = parseFloat(this.value) || 0;
+                        document.getElementById('costoCombustible').value = (litros * 0.50).toFixed(2);
+                    });
+                }
+            }
+        }
+
+        function setupSiniestroForm() {
+            const form = document.getElementById('siniestroForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('siniestroId').value;
+                    const siniestro = {
+                        placa: document.getElementById('placaSiniestro').value,
+                        fechaHora: document.getElementById('fechaHoraSiniestro').value,
+                        conductor: document.getElementById('conductorSiniestro').value,
+                        poliza: document.getElementById('polizaSiniestro').value,
+                        lugar: document.getElementById('lugarSiniestro').value,
+                        descripcion: document.getElementById('descripcionSiniestro').value,
+                        costoReparacion: document.getElementById('costoReparacion').value,
+                        centro: document.getElementById('centroSiniestro').value
+                    };
+
+                    if (id === '') {
+                        siniestros.push(siniestro);
+                    } else {
+                        siniestros[id] = siniestro;
+                    }
+
+                    localStorage.setItem('siniestros', JSON.stringify(siniestros));
+                    loadSiniestroData();
+                    this.reset();
+                    document.getElementById('siniestroId').value = '';
+                    updateReports();
+                });
+            }
+        }
+
+        function setupLavadoForm() {
+            const form = document.getElementById('lavadoForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('lavadoId').value;
+                    const lavado = {
+                        placa: document.getElementById('placaLavado').value,
+                        fecha: document.getElementById('fechaLavado').value,
+                        costo: document.getElementById('costoLavado').value,
+                        centro: document.getElementById('centroLavado').value
+                    };
+
+                    if (id === '') {
+                        lavados.push(lavado);
+                    } else {
+                        lavados[id] = lavado;
+                    }
+
+                    localStorage.setItem('lavados', JSON.stringify(lavados));
+                    loadLavadoData();
+                    this.reset();
+                    document.getElementById('lavadoId').value = '';
+                    updateReports();
+                });
+            }
+        }
+
+        // Gasoil - MODIFICADA
+        function setupGasoilForm() {
+            const form = document.getElementById('gasoilForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('gasoilId').value;
+                    const litros = parseFloat(document.getElementById('litrosGasoil').value) || 0;
+                    const flete = parseFloat(document.getElementById('fleteGasoil').value) || 0;
+                    const gasoil = {
+                        placa: document.getElementById('placaGasoil').value,
+                        fecha: document.getElementById('fechaGasoil').value,
+                        litros: litros,
+                        flete: flete,
+                        costo: (litros * 0.48) + flete,
+                        centro: document.getElementById('centroGasoil').value
+                    };
+
+                    if (id === '') {
+                        gasoilRecords.push(gasoil);
+                    } else {
+                        gasoilRecords[id] = gasoil;
+                    }
+
+                    localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
+                    loadGasoilData();
+                    this.reset();
+                    document.getElementById('gasoilId').value = '';
+                    updateReports();
+                });
+
+                // Calcular costo automáticamente
+                const litrosInput = document.getElementById('litrosGasoil');
+                const fleteInput = document.getElementById('fleteGasoil');
+                
+                function calcularCostoGasoil() {
+                    const litros = parseFloat(litrosInput.value) || 0;
+                    const flete = parseFloat(fleteInput.value) || 0;
+                    const costoTotal = (litros * 0.48) + flete;
+                    document.getElementById('costoGasoil').value = costoTotal.toFixed(2);
+                }
+
+                if (litrosInput) {
+                    litrosInput.addEventListener('input', calcularCostoGasoil);
+                }
+                if (fleteInput) {
+                    fleteInput.addEventListener('input', calcularCostoGasoil);
+                }
+            }
+        }
+
+        function setupSearchFunctionality() {
+            // Búsqueda en todas las tablas
+            setupSearchInput('searchVehicleInput', 'vehicleTableBody');
+            setupSearchInput('searchMaintenanceInput', 'maintenanceTableBody');
+            setupSearchInput('searchInspectionInput', 'inspectionTableBody');
+            setupSearchInput('searchFuelInput', 'fuelTableBody');
+            setupSearchInput('searchSiniestroInput', 'siniestroTableBody');
+            setupSearchInput('searchLavadoInput', 'lavadoTableBody');
+            setupSearchInput('searchGasoilInput', 'gasoilTableBody');
+        }
+
+        function setupSearchInput(inputId, tbodyId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const tbody = document.getElementById(tbodyId);
+                    if (tbody) {
+                        const rows = tbody.querySelectorAll('tr');
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    }
+                });
+            }
+        }
+
+        // Funciones para Reportes - COMPLETAMENTE MODIFICADAS
+        function updateReports() {
+            const year = document.getElementById('reportYear').value;
+            const month = document.getElementById('reportMonth').value;
+            const center = document.getElementById('reportCenter').value;
+            
+            updateSummaryCards(year, month, center);
+            updateMonthlyComparisonChart(year);
+            updateExpenseDistributionChart(year, center);
+            updateMonthlyVehicleTables(year);
+            updateFuelConsumptionTables(year);
+            updateAnnualComparison(year);
+            updateOriginalCounters(); // Mantener contadores originales
+        }
+
+        function updateSummaryCards(year, month, center) {
+            const msoTotal = calculateTotalExpenses('MSO', year, month);
+            const unccsTotal = calculateTotalExpenses('UN CCS', year, month);
+            
+            document.getElementById('totalMSO').textContent = `$${msoTotal.toFixed(2)}`;
+            document.getElementById('totalUNCCS').textContent = `$${unccsTotal.toFixed(2)}`;
+            
+            // Determinar mayor y menor gasto
+            if (msoTotal > unccsTotal) {
+                document.getElementById('highestSpender').textContent = 'MSO';
+                document.getElementById('highestAmount').textContent = `$${msoTotal.toFixed(2)}`;
+                document.getElementById('lowestSpender').textContent = 'UN CCS';
+                document.getElementById('lowestAmount').textContent = `$${unccsTotal.toFixed(2)}`;
+            } else {
+                document.getElementById('highestSpender').textContent = 'UN CCS';
+                document.getElementById('highestAmount').textContent = `$${unccsTotal.toFixed(2)}`;
+                document.getElementById('lowestSpender').textContent = 'MSO';
+                document.getElementById('lowestAmount').textContent = `$${msoTotal.toFixed(2)}`;
+            }
+            
+            // Tendencias (comparación con año anterior)
+            const prevYearMSO = calculateTotalExpenses('MSO', parseInt(year)-1, month);
+            const prevYearUNCCS = calculateTotalExpenses('UN CCS', parseInt(year)-1, month);
+            
+            const msoTrend = msoTotal - prevYearMSO;
+            const unccsTrend = unccsTotal - prevYearUNCCS;
+            
+            document.getElementById('msoTrend').textContent = 
+                msoTrend >= 0 ? `+$${msoTrend.toFixed(2)} vs año anterior` : `-$${Math.abs(msoTrend).toFixed(2)} vs año anterior`;
+            document.getElementById('msoTrend').className = `text-sm mt-1 ${msoTrend >= 0 ? 'text-red-600' : 'text-green-600'}`;
+            
+            document.getElementById('unccsTrend').textContent = 
+                unccsTrend >= 0 ? `+$${unccsTrend.toFixed(2)} vs año anterior` : `-$${Math.abs(unccsTrend).toFixed(2)} vs año anterior`;
+            document.getElementById('unccsTrend').className = `text-sm mt-1 ${unccsTrend >= 0 ? 'text-red-600' : 'text-green-600'}`;
+        }
+
+        function calculateTotalExpenses(center, year, month = 'all') {
+            let total = 0;
+            
+            // Mantenimientos
+            total += maintenances
+                .filter(m => m.centro === center && 
+                    (month === 'all' || new Date(m.fecha).getMonth() + 1 == month) &&
+                    new Date(m.fecha).getFullYear() == year)
+                .reduce((sum, m) => sum + parseFloat(m.costo || 0), 0);
+            
+            // Combustible
+            total += fuelRecords
+                .filter(f => f.centro === center && 
+                    (month === 'all' || new Date(f.fecha).getMonth() + 1 == month) &&
+                    new Date(f.fecha).getFullYear() == year)
+                .reduce((sum, f) => sum + parseFloat(f.costo || 0), 0);
+            
+            // Siniestros
+            total += siniestros
+                .filter(s => s.centro === center && 
+                    (month === 'all' || new Date(s.fechaHora).getMonth() + 1 == month) &&
+                    new Date(s.fechaHora).getFullYear() == year)
+                .reduce((sum, s) => sum + parseFloat(s.costoReparacion || 0), 0);
+            
+            // Lavados
+            total += lavados
+                .filter(l => l.centro === center && 
+                    (month === 'all' || new Date(l.fecha).getMonth() + 1 == month) &&
+                    new Date(l.fecha).getFullYear() == year)
+                .reduce((sum, l) => sum + parseFloat(l.costo || 0), 0);
+            
+            // Gasoil
+            total += gasoilRecords
+                .filter(g => g.centro === center && 
+                    (month === 'all' || new Date(g.fecha).getMonth() + 1 == month) &&
+                    new Date(g.fecha).getFullYear() == year)
+                .reduce((sum, g) => sum + parseFloat(g.costo || 0), 0);
+            
+            return total;
+        }
+
+        function updateMonthlyComparisonChart(year) {
+            const ctx = document.getElementById('monthlyComparisonChart');
+            if (!ctx) return;
+            
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const msoData = [];
+            const unccsData = [];
+            
+            for (let month = 1; month <= 12; month++) {
+                msoData.push(calculateTotalExpenses('MSO', year, month));
+                unccsData.push(calculateTotalExpenses('UN CCS', year, month));
+            }
+            
+            const data = {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'MSO',
+                        data: msoData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'UN CCS',
+                        data: unccsData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.1
+                    }
+                ]
+            };
+            
+            if (window.monthlyComparisonChart) window.monthlyComparisonChart.destroy();
+            window.monthlyComparisonChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: `Comparativa Mensual ${year}`
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateExpenseDistributionChart(year, center = 'all') {
+            const ctx = document.getElementById('expenseDistributionChart');
+            if (!ctx) return;
+            
+            const categories = ['Mantenimientos', 'Combustible', 'Siniestros', 'Lavados', 'Gasoil'];
+            let data = [];
+            
+            if (center === 'all') {
+                // Combinar ambos centros
+                data = [
+                    calculateCategoryExpenses('maintenances', year, 'all'),
+                    calculateCategoryExpenses('fuel', year, 'all'),
+                    calculateCategoryExpenses('siniestros', year, 'all'),
+                    calculateCategoryExpenses('lavados', year, 'all'),
+                    calculateCategoryExpenses('gasoil', year, 'all')
+                ];
+            } else {
+                // Centro específico
+                data = [
+                    calculateCategoryExpenses('maintenances', year, center),
+                    calculateCategoryExpenses('fuel', year, center),
+                    calculateCategoryExpenses('siniestros', year, center),
+                    calculateCategoryExpenses('lavados', year, center),
+                    calculateCategoryExpenses('gasoil', year, center)
+                ];
+            }
+            
+            const chartData = {
+                labels: categories,
+                datasets: [{
+                    label: 'Gastos por Categoría',
+                    data: data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ]
+                }]
+            };
+            
+            if (window.expenseDistributionChart) window.expenseDistributionChart.destroy();
+            window.expenseDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: `Distribución de Gastos ${year}`
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateCategoryExpenses(category, year, center = 'all') {
+            let total = 0;
+            let records = [];
+            
+            switch (category) {
+                case 'maintenances':
+                    records = maintenances;
+                    break;
+                case 'fuel':
+                    records = fuelRecords;
+                    break;
+                case 'siniestros':
+                    records = siniestros;
+                    break;
+                case 'lavados':
+                    records = lavados;
+                    break;
+                case 'gasoil':
+                    records = gasoilRecords;
+                    break;
+            }
+            
+            const filteredRecords = records.filter(record => 
+                (center === 'all' || record.centro === center) &&
+                new Date(record.fecha || record.fechaHora).getFullYear() == year
+            );
+            
+            filteredRecords.forEach(record => {
+                if (category === 'siniestros') {
+                    total += parseFloat(record.costoReparacion || 0);
+                } else {
+                    total += parseFloat(record.costo || 0);
+                }
+            });
+            
+            return total;
+        }
+
+        function updateMonthlyVehicleTables(year) {
+            updateVehicleTable('MSO', year, 'msoMonthlyTableBody');
+            updateVehicleTable('UN CCS', year, 'unccsMonthlyTableBody');
+        }
+
+        function updateVehicleTable(center, year, tableBodyId) {
+            const tbody = document.getElementById(tableBodyId);
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            // Obtener vehículos del centro
+            const centerVehicles = vehicles.filter(v => v.centroOperaciones === center);
+            const vehiclePlacas = [...new Set(centerVehicles.map(v => v.placa))];
+            
+            vehiclePlacas.forEach(placa => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                
+                let rowHTML = `<td class="py-3 px-6 text-left font-semibold">${placa}</td>`;
+                let yearlyTotal = 0;
+                
+                // Calcular gastos por mes
+                for (let month = 1; month <= 12; month++) {
+                    const monthlyExpense = calculateVehicleMonthlyExpense(placa, year, month);
+                    yearlyTotal += monthlyExpense;
+                    rowHTML += `<td class="py-3 px-6 text-left">$${monthlyExpense.toFixed(2)}</td>`;
+                }
+                
+                rowHTML += `<td class="py-3 px-6 text-left font-bold text-inter-primary">$${yearlyTotal.toFixed(2)}</td>`;
+                row.innerHTML = rowHTML;
+                tbody.appendChild(row);
+            });
+            
+            // Agregar fila de totales
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'border-t-2 border-gray-300 bg-gray-50 font-bold';
+            let totalHTML = `<td class="py-3 px-6 text-left">TOTAL ${center}</td>`;
+            let grandTotal = 0;
+            
+            for (let month = 1; month <= 12; month++) {
+                const monthTotal = calculateTotalExpenses(center, year, month);
+                grandTotal += monthTotal;
+                totalHTML += `<td class="py-3 px-6 text-left text-inter-primary">$${monthTotal.toFixed(2)}</td>`;
+            }
+            
+            totalHTML += `<td class="py-3 px-6 text-left text-inter-primary">$${grandTotal.toFixed(2)}</td>`;
+            totalRow.innerHTML = totalHTML;
+            tbody.appendChild(totalRow);
+        }
+
+        function calculateVehicleMonthlyExpense(placa, year, month) {
+            let total = 0;
+            
+            // Mantenimientos del vehículo
+            total += maintenances
+                .filter(m => m.placa === placa && 
+                    new Date(m.fecha).getMonth() + 1 == month &&
+                    new Date(m.fecha).getFullYear() == year)
+                .reduce((sum, m) => sum + parseFloat(m.costo || 0), 0);
+            
+            // Combustible del vehículo
+            total += fuelRecords
+                .filter(f => f.placa === placa && 
+                    new Date(f.fecha).getMonth() + 1 == month &&
+                    new Date(f.fecha).getFullYear() == year)
+                .reduce((sum, f) => sum + parseFloat(f.costo || 0), 0);
+            
+            // Siniestros del vehículo
+            total += siniestros
+                .filter(s => s.placa === placa && 
+                    new Date(s.fechaHora).getMonth() + 1 == month &&
+                    new Date(s.fechaHora).getFullYear() == year)
+                .reduce((sum, s) => sum + parseFloat(s.costoReparacion || 0), 0);
+            
+            // Lavados del vehículo
+            total += lavados
+                .filter(l => l.placa === placa && 
+                    new Date(l.fecha).getMonth() + 1 == month &&
+                    new Date(l.fecha).getFullYear() == year)
+                .reduce((sum, l) => sum + parseFloat(l.costo || 0), 0);
+            
+            // Gasoil del vehículo
+            total += gasoilRecords
+                .filter(g => g.placa === placa && 
+                    new Date(g.fecha).getMonth() + 1 == month &&
+                    new Date(g.fecha).getFullYear() == year)
+                .reduce((sum, g) => sum + parseFloat(g.costo || 0), 0);
+            
+            return total;
+        }
+
+        // NUEVA FUNCIÓN: Actualizar tablas de consumo de combustible
+        function updateFuelConsumptionTables(year) {
+            updateFuelTable('MSO', year, 'msoFuelTableBody');
+            updateFuelTable('UN CCS', year, 'unccsFuelTableBody');
+        }
+
+        function updateFuelTable(center, year, tableBodyId) {
+            const tbody = document.getElementById(tableBodyId);
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            // Obtener vehículos del centro
+            const centerVehicles = vehicles.filter(v => v.centroOperaciones === center);
+            const vehiclePlacas = [...new Set(centerVehicles.map(v => v.placa))];
+            
+            vehiclePlacas.forEach(placa => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                
+                let rowHTML = `<td class="py-3 px-6 text-left font-semibold">${placa}</td>`;
+                let yearlyTotalLitros = 0;
+                let yearlyTotalCosto = 0;
+                
+                // Calcular litros y costo por mes
+                for (let month = 1; month <= 12; month++) {
+                    const monthlyFuel = calculateVehicleMonthlyFuel(placa, year, month);
+                    yearlyTotalLitros += monthlyFuel.litros;
+                    yearlyTotalCosto += monthlyFuel.costo;
+                    rowHTML += `<td class="py-3 px-6 text-left">${monthlyFuel.litros.toFixed(2)}</td>`;
+                }
+                
+                rowHTML += `<td class="py-3 px-6 text-left font-bold text-inter-primary">${yearlyTotalLitros.toFixed(2)}</td>`;
+                rowHTML += `<td class="py-3 px-6 text-left font-bold text-inter-primary">$${yearlyTotalCosto.toFixed(2)}</td>`;
+                row.innerHTML = rowHTML;
+                tbody.appendChild(row);
+            });
+            
+            // Agregar fila de totales
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'border-t-2 border-gray-300 bg-gray-50 font-bold';
+            let totalHTML = `<td class="py-3 px-6 text-left">TOTAL ${center}</td>`;
+            let grandTotalLitros = 0;
+            let grandTotalCosto = 0;
+            
+            for (let month = 1; month <= 12; month++) {
+                const monthFuel = calculateCenterMonthlyFuel(center, year, month);
+                grandTotalLitros += monthFuel.litros;
+                grandTotalCosto += monthFuel.costo;
+                totalHTML += `<td class="py-3 px-6 text-left text-inter-primary">${monthFuel.litros.toFixed(2)}</td>`;
+            }
+            
+            totalHTML += `<td class="py-3 px-6 text-left text-inter-primary">${grandTotalLitros.toFixed(2)}</td>`;
+            totalHTML += `<td class="py-3 px-6 text-left text-inter-primary">$${grandTotalCosto.toFixed(2)}</td>`;
+            totalRow.innerHTML = totalHTML;
+            tbody.appendChild(totalRow);
+        }
+
+        function calculateVehicleMonthlyFuel(placa, year, month) {
+            let litros = 0;
+            let costo = 0;
+            
+            // Combustible del vehículo
+            fuelRecords
+                .filter(f => f.placa === placa && 
+                    new Date(f.fecha).getMonth() + 1 == month &&
+                    new Date(f.fecha).getFullYear() == year)
+                .forEach(f => {
+                    litros += parseFloat(f.litros || 0);
+                    costo += parseFloat(f.costo || 0);
+                });
+            
+            return { litros, costo };
+        }
+
+        function calculateCenterMonthlyFuel(center, year, month) {
+            let litros = 0;
+            let costo = 0;
+            
+            // Combustible del centro
+            fuelRecords
+                .filter(f => f.centro === center && 
+                    new Date(f.fecha).getMonth() + 1 == month &&
+                    new Date(f.fecha).getFullYear() == year)
+                .forEach(f => {
+                    litros += parseFloat(f.litros || 0);
+                    costo += parseFloat(f.costo || 0);
+                });
+            
+            return { litros, costo };
+        }
+
+        function updateAnnualComparison(year) {
+            updateAnnualBreakdown('MSO', year, 'msoAnnualBreakdown');
+            updateAnnualBreakdown('UN CCS', year, 'unccsAnnualBreakdown');
+        }
+
+        function updateAnnualBreakdown(center, year, elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const categories = {
+                'Mantenimientos': calculateCategoryExpenses('maintenances', year, center),
+                'Combustible': calculateCategoryExpenses('fuel', year, center),
+                'Siniestros': calculateCategoryExpenses('siniestros', year, center),
+                'Lavados': calculateCategoryExpenses('lavados', year, center),
+                'Gasoil': calculateCategoryExpenses('gasoil', year, center)
+            };
+            
+            let html = '';
+            let total = 0;
+            
+            Object.entries(categories).forEach(([category, amount]) => {
+                total += amount;
+                const percentage = total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0';
+                html += `
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">${category}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-semibold">$${amount.toFixed(2)}</span>
+                            <span class="text-xs text-gray-500">${percentage}%</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-inter-primary h-2 rounded-full" style="width: ${percentage}%"></div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="flex justify-between items-center pt-2 border-t border-gray-300 mt-2">
+                    <span class="font-bold text-gray-800">TOTAL ANUAL</span>
+                    <span class="font-bold text-inter-primary">$${total.toFixed(2)}</span>
+                </div>
+            `;
+            
+            element.innerHTML = html;
+        }
+
+        function updateOriginalCounters() {
+            // Mantener contadores originales para compatibilidad
+            document.getElementById('totalVehicles').textContent = vehicles.length;
+            document.getElementById('totalMaintenances').textContent = maintenances.length;
+            document.getElementById('totalFuel').textContent = fuelRecords.reduce((sum, record) => sum + parseFloat(record.litros || 0), 0).toFixed(2) + ' L';
+            document.getElementById('totalSiniestros').textContent = siniestros.length;
+            document.getElementById('totalLavados').textContent = lavados.length;
+            document.getElementById('totalGasoil').textContent = gasoilRecords.reduce((sum, record) => sum + parseFloat(record.litros || 0), 0).toFixed(2) + ' L';
+        }
+
+        // Configuración de event listeners para reportes
+        function setupReportEventListeners() {
+            const applyFiltersBtn = document.getElementById('applyFilters');
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', updateReports);
+            }
+            
+            // Actualizar reportes cuando cambien los selects
+            const filterSelects = ['reportYear', 'reportMonth', 'reportCenter'];
+            filterSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.addEventListener('change', updateReports);
+                }
+            });
+        }
+
+        // Configuración de botones de exportación
+        function setupExportButtons() {
+            // Vehículos
+            setupExportButton('exportVehicleBtn', 'vehicles');
+            // Mantenimientos
+            setupExportButton('exportMaintenanceBtn', 'maintenances');
+            // Inspecciones
+            setupExportButton('exportInspectionBtn', 'inspections');
+            // Combustible
+            setupExportButton('exportFuelBtn', 'fuel');
+            // Siniestros
+            setupExportButton('exportSiniestroBtn', 'siniestros');
+            // Lavados
+            setupExportButton('exportLavadoBtn', 'lavados');
+            // Gasoil
+            setupExportButton('exportGasoilBtn', 'gasoil');
+        }
+
+        function setupExportButton(buttonId, type) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.addEventListener('click', function() {
+                    exportToExcel(type);
+                });
+            }
+        }
+
+        function exportToExcel(type) {
+            let data = [];
+            let fileName = '';
+            let headers = [];
+
+            switch (type) {
+                case 'vehicles':
+                    data = vehicles;
+                    fileName = 'vehiculos.xlsx';
+                    headers = ['Placa', 'Marca', 'Modelo', 'Año', 'Centro de Operaciones', 'Capacidad Tanque', 'Departamento Asignado', 'Estado'];
+                    break;
+                case 'maintenances':
+                    data = maintenances;
+                    fileName = 'mantenimientos.xlsx';
+                    headers = ['Placa', 'Tipo', 'Fecha', 'Costo', 'Proveedor/Taller', 'Centro de Operaciones', 'Descripción'];
+                    break;
+                case 'inspections':
+                    data = inspections;
+                    fileName = 'inspecciones.xlsx';
+                    headers = ['Placa', 'Conductor', 'Kilometraje', 'Fecha', 'Chequeo', 'Observaciones'];
+                    break;
+                case 'fuel':
+                    data = fuelRecords;
+                    fileName = 'combustible.xlsx';
+                    headers = ['Placa', 'Fecha', 'Litros', 'Costo', 'Centro de Operaciones'];
+                    break;
+                case 'siniestros':
+                    data = siniestros;
+                    fileName = 'siniestros.xlsx';
+                    headers = ['Placa', 'Fecha y Hora', 'Conductor', 'Póliza', 'Lugar', 'Descripción', 'Costo Reparación', 'Centro de Operaciones'];
+                    break;
+                case 'lavados':
+                    data = lavados;
+                    fileName = 'lavados.xlsx';
+                    headers = ['Placa', 'Fecha', 'Costo', 'Centro de Operaciones'];
+                    break;
+                case 'gasoil':
+                    data = gasoilRecords;
+                    fileName = 'gasoil.xlsx';
+                    headers = ['Placa', 'Fecha', 'Litros', 'Flete', 'Costo Total', 'Centro de Operaciones'];
+                    break;
+            }
+
+            if (data.length === 0) {
+                alert('No hay datos para exportar.');
+                return;
+            }
+
+            // Convertir datos a formato de hoja de cálculo
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+            
+            // Descargar archivo
+            XLSX.writeFile(wb, fileName);
+        }
+    </script>
+</body>
+</html>

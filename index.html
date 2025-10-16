@@ -17,6 +17,7 @@
     <!-- Firebase App (the core Firebase SDK) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCo5Q10ZQ42pwgGSS-v-yYmcoAxIo8vAoE",
@@ -28,8 +29,14 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Hacer disponible globalmente
         window.firebaseApp = app;
-        console.log('Firebase inicializado correctamente');
+        window.db = db;
+        window.firebaseModules = { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc };
+        
+        console.log('Firebase y Firestore inicializados correctamente');
     </script>
 
     <style>
@@ -49,6 +56,12 @@
     <header class="bg-inter-primary text-white p-4 shadow-md">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold">Gestión de Flota</h1>
+            <div class="flex items-center space-x-4">
+                <span id="syncStatus" class="text-sm bg-green-500 px-2 py-1 rounded">Conectado</span>
+                <button id="syncButton" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                    Sincronizar
+                </button>
+            </div>
         </div>
     </header>
 
@@ -846,6 +859,333 @@
         let monthlyComparisonChart = null;
         let expenseDistributionChart = null;
 
+        // ==================== FUNCIONES DE FIREBASE ====================
+        
+        // Función para guardar en Firebase
+        async function saveToFirebase(collectionName, data) {
+            try {
+                if (!window.db) {
+                    console.log('Firebase no está disponible, guardando solo en localStorage');
+                    return null;
+                }
+                
+                const { addDoc, collection } = window.firebaseModules;
+                const docRef = await addDoc(collection(window.db, collectionName), {
+                    ...data,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+                console.log(`✅ Guardado en Firebase: ${collectionName}`, docRef.id);
+                return docRef.id;
+            } catch (error) {
+                console.error(`❌ Error guardando en Firebase (${collectionName}):`, error);
+                return null;
+            }
+        }
+
+        // Función para cargar desde Firebase
+        async function loadFromFirebase(collectionName) {
+            try {
+                if (!window.db) {
+                    console.log('Firebase no está disponible, cargando desde localStorage');
+                    return [];
+                }
+                
+                const { getDocs, collection } = window.firebaseModules;
+                const querySnapshot = await getDocs(collection(window.db, collectionName));
+                const data = [];
+                querySnapshot.forEach((doc) => {
+                    data.push({
+                        firebaseId: doc.id,
+                        ...doc.data()
+                    });
+                });
+                console.log(`✅ Cargados ${data.length} registros de Firebase: ${collectionName}`);
+                return data;
+            } catch (error) {
+                console.error(`❌ Error cargando desde Firebase (${collectionName}):`, error);
+                return [];
+            }
+        }
+
+        // Función para actualizar en Firebase
+        async function updateInFirebase(collectionName, docId, data) {
+            try {
+                if (!window.db) {
+                    console.log('Firebase no está disponible, actualizando solo en localStorage');
+                    return false;
+                }
+                
+                const { updateDoc, doc } = window.firebaseModules;
+                const docRef = doc(window.db, collectionName, docId);
+                await updateDoc(docRef, {
+                    ...data,
+                    updatedAt: new Date()
+                });
+                console.log(`✅ Actualizado en Firebase: ${collectionName}/${docId}`);
+                return true;
+            } catch (error) {
+                console.error(`❌ Error actualizando en Firebase (${collectionName}/${docId}):`, error);
+                return false;
+            }
+        }
+
+        // Función para eliminar de Firebase
+        async function deleteFromFirebase(collectionName, docId) {
+            try {
+                if (!window.db) {
+                    console.log('Firebase no está disponible, eliminando solo de localStorage');
+                    return false;
+                }
+                
+                const { deleteDoc, doc } = window.firebaseModules;
+                await deleteDoc(doc(window.db, collectionName, docId));
+                console.log(`✅ Eliminado de Firebase: ${collectionName}/${docId}`);
+                return true;
+            } catch (error) {
+                console.error(`❌ Error eliminando de Firebase (${collectionName}/${docId}):`, error);
+                return false;
+            }
+        }
+
+        // Función para sincronizar todos los datos con Firebase
+        async function syncAllWithFirebase() {
+            try {
+                console.log('🔄 Sincronizando con Firebase...');
+                updateSyncStatus('loading', 'Sincronizando...');
+                
+                // Cargar datos desde Firebase
+                const [
+                    fbVehicles, 
+                    fbMaintenances, 
+                    fbInspections, 
+                    fbFuel, 
+                    fbSiniestros, 
+                    fbLavados, 
+                    fbGasoil
+                ] = await Promise.all([
+                    loadFromFirebase('vehicles'),
+                    loadFromFirebase('maintenances'),
+                    loadFromFirebase('inspections'),
+                    loadFromFirebase('fuelRecords'),
+                    loadFromFirebase('siniestros'),
+                    loadFromFirebase('lavados'),
+                    loadFromFirebase('gasoilRecords')
+                ]);
+
+                // Combinar datos: prioridad a Firebase, luego localStorage
+                vehicles = fbVehicles.length > 0 ? fbVehicles : vehicles;
+                maintenances = fbMaintenances.length > 0 ? fbMaintenances : maintenances;
+                inspections = fbInspections.length > 0 ? fbInspections : inspections;
+                fuelRecords = fbFuel.length > 0 ? fbFuel : fuelRecords;
+                siniestros = fbSiniestros.length > 0 ? fbSiniestros : siniestros;
+                lavados = fbLavados.length > 0 ? fbLavados : lavados;
+                gasoilRecords = fbGasoil.length > 0 ? fbGasoil : gasoilRecords;
+
+                // Guardar en localStorage como respaldo
+                localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                localStorage.setItem('inspections', JSON.stringify(inspections));
+                localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
+                localStorage.setItem('siniestros', JSON.stringify(siniestros));
+                localStorage.setItem('lavados', JSON.stringify(lavados));
+                localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
+
+                console.log('✅ Sincronización completada');
+                updateSyncStatus('success', 'Datos sincronizados');
+                
+                // Recargar la interfaz
+                loadAllData();
+                updateReports();
+                
+            } catch (error) {
+                console.error('❌ Error en sincronización:', error);
+                updateSyncStatus('error', 'Error en sincronización');
+            }
+        }
+
+        // Función para actualizar el estado de sincronización
+        function updateSyncStatus(type, message) {
+            const statusElement = document.getElementById('syncStatus');
+            if (statusElement) {
+                statusElement.textContent = message;
+                statusElement.className = `text-sm px-2 py-1 rounded ${
+                    type === 'success' ? 'bg-green-500 text-white' : 
+                    type === 'error' ? 'bg-red-500 text-white' : 
+                    type === 'loading' ? 'bg-yellow-500 text-white' :
+                    'bg-gray-500 text-white'
+                }`;
+            }
+        }
+
+        // ==================== FUNCIONES MODIFICADAS CON FIREBASE ====================
+
+        // Función modificada para guardar vehículos
+        async function setupVehicleForm() {
+            const form = document.getElementById('vehicleForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('vehicleId').value;
+                    const vehicle = {
+                        placa: document.getElementById('placa').value,
+                        marca: document.getElementById('marca').value,
+                        modelo: document.getElementById('modelo').value,
+                        anio: document.getElementById('anio').value,
+                        centroOperaciones: document.getElementById('centroOperaciones').value,
+                        capacidadTanque: document.getElementById('capacidadTanque').value,
+                        departamentoAsignado: document.getElementById('departamentoAsignado').value,
+                        estado: document.getElementById('estado').value,
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('vehicles', vehicle);
+                        if (firebaseId) {
+                            vehicle.firebaseId = firebaseId;
+                        }
+                        // Guardar en localStorage
+                        vehicles.push(vehicle);
+                        localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                    } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (vehicles[id].firebaseId) {
+                            await updateInFirebase('vehicles', vehicles[id].firebaseId, vehicle);
+                        }
+                        vehicles[id] = vehicle;
+                        localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                    }
+
+                    loadVehicleData();
+                    this.reset();
+                    document.getElementById('vehicleId').value = '';
+                    updateReports();
+                    updateSyncStatus('success', 'Guardado en Firebase');
+                });
+            }
+
+            const deleteBtn = document.getElementById('deleteMassiveBtn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async function() {
+                    if (confirm('¿Está seguro de que desea eliminar TODOS los vehículos? Esta acción no se puede deshacer.')) {
+                        // Eliminar de Firebase
+                        for (const vehicle of vehicles) {
+                            if (vehicle.firebaseId) {
+                                await deleteFromFirebase('vehicles', vehicle.firebaseId);
+                            }
+                        }
+                        // Eliminar de localStorage
+                        vehicles = [];
+                        localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                        loadVehicleData();
+                        updateReports();
+                        updateSyncStatus('success', 'Todos los vehículos eliminados');
+                    }
+                });
+            }
+        }
+
+        // Función modificada para eliminar vehículo individual
+        window.deleteVehicle = async function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este vehículo?')) {
+                // Eliminar de Firebase si tiene ID
+                if (vehicles[index].firebaseId) {
+                    await deleteFromFirebase('vehicles', vehicles[index].firebaseId);
+                }
+                // Eliminar de localStorage
+                vehicles.splice(index, 1);
+                localStorage.setItem('vehicles', JSON.stringify(vehicles));
+                loadVehicleData();
+                updateReports();
+                updateSyncStatus('success', 'Vehículo eliminado');
+            }
+        };
+
+        // Función modificada para guardar mantenimientos
+        async function setupMaintenanceForm() {
+            const form = document.getElementById('maintenanceForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('maintenanceId').value;
+                    const tipo = document.getElementById('tipoMantenimiento').value;
+                    
+                    const maintenance = {
+                        placa: document.getElementById('placaMantenimiento').value,
+                        tipo: tipo,
+                        fecha: document.getElementById('fechaMantenimiento').value,
+                        costo: document.getElementById('costoMantenimiento').value,
+                        proveedor: document.getElementById('proveedorTaller').value,
+                        centro: document.getElementById('centroMantenimiento').value,
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    if (tipo === 'preventivo') {
+                        maintenance.kilometraje = document.getElementById('kilometrajePreventivo').value;
+                        maintenance.descripcion = document.getElementById('descripcionPreventivo').value;
+                    } else {
+                        maintenance.descripcion = document.getElementById('descripcionCorrectivo').value;
+                        maintenance.causa = document.getElementById('causaCorrectivo').value;
+                    }
+
+                    if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('maintenances', maintenance);
+                        if (firebaseId) {
+                            maintenance.firebaseId = firebaseId;
+                        }
+                        maintenances.push(maintenance);
+                    } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (maintenances[id].firebaseId) {
+                            await updateInFirebase('maintenances', maintenances[id].firebaseId, maintenance);
+                        }
+                        maintenances[id] = maintenance;
+                    }
+
+                    localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                    loadMaintenanceData();
+                    this.reset();
+                    document.getElementById('maintenanceId').value = '';
+                    updateReports();
+                    updateSyncStatus('success', 'Guardado en Firebase');
+                });
+
+                const tipoSelect = document.getElementById('tipoMantenimiento');
+                if (tipoSelect) {
+                    tipoSelect.addEventListener('change', function() {
+                        const tipo = this.value;
+                        document.getElementById('camposPreventivo').classList.add('hidden');
+                        document.getElementById('camposCorrectivo').classList.add('hidden');
+                        
+                        if (tipo === 'preventivo') {
+                            document.getElementById('camposPreventivo').classList.remove('hidden');
+                        } else if (tipo === 'correctivo') {
+                            document.getElementById('camposCorrectivo').classList.remove('hidden');
+                        }
+                    });
+                }
+            }
+        }
+
+        // Función modificada para eliminar mantenimiento
+        window.deleteMaintenance = async function(index) {
+            if (confirm('¿Está seguro de que desea eliminar este mantenimiento?')) {
+                // Eliminar de Firebase si tiene ID
+                if (maintenances[index].firebaseId) {
+                    await deleteFromFirebase('maintenances', maintenances[index].firebaseId);
+                }
+                maintenances.splice(index, 1);
+                localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                loadMaintenanceData();
+                updateReports();
+                updateSyncStatus('success', 'Mantenimiento eliminado');
+            }
+        };
+
+        // ==================== INICIALIZACIÓN MEJORADA ====================
+
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             // Verificación de que Chart.js está cargado
@@ -860,8 +1200,21 @@
             setupImportButtons();
             setupYearSelector();
             updateReports();
+            
+            // Sincronizar con Firebase al cargar la página
+            setTimeout(() => {
+                syncAllWithFirebase();
+            }, 1000);
+            
+            // Configurar botón de sincronización
+            const syncButton = document.getElementById('syncButton');
+            if (syncButton) {
+                syncButton.addEventListener('click', syncAllWithFirebase);
+            }
         });
 
+        // ==================== EL RESTO DE TU CÓDIGO ORIGINAL SE MANTIENE ====================
+        
         // CORRECCIÓN: Función para configurar el selector de año
         function setupYearSelector() {
             const yearSelect = document.getElementById('reportYear');
@@ -1118,15 +1471,6 @@
             document.getElementById('estado').value = vehicle.estado || '';
         };
 
-        window.deleteVehicle = function(index) {
-            if (confirm('¿Está seguro de que desea eliminar este vehículo?')) {
-                vehicles.splice(index, 1);
-                localStorage.setItem('vehicles', JSON.stringify(vehicles));
-                loadVehicleData();
-                updateReports();
-            }
-        };
-
         // Mantenimientos
         window.editMaintenance = function(index) {
             const maintenance = maintenances[index];
@@ -1146,15 +1490,6 @@
             } else {
                 document.getElementById('descripcionCorrectivo').value = maintenance.descripcion || '';
                 document.getElementById('causaCorrectivo').value = maintenance.causa || '';
-            }
-        };
-
-        window.deleteMaintenance = function(index) {
-            if (confirm('¿Está seguro de que desea eliminar este mantenimiento?')) {
-                maintenances.splice(index, 1);
-                localStorage.setItem('maintenances', JSON.stringify(maintenances));
-                loadMaintenanceData();
-                updateReports();
             }
         };
 
@@ -1193,12 +1528,17 @@
             document.getElementById('centroCombustible').value = record.centro;
         };
 
-        window.deleteFuel = function(index) {
+        window.deleteFuel = async function(index) {
             if (confirm('¿Está seguro de que desea eliminar este registro de combustible?')) {
+                // Eliminar de Firebase si tiene ID
+                if (fuelRecords[index].firebaseId) {
+                    await deleteFromFirebase('fuelRecords', fuelRecords[index].firebaseId);
+                }
                 fuelRecords.splice(index, 1);
                 localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
                 loadFuelData();
                 updateReports();
+                updateSyncStatus('success', 'Combustible eliminado');
             }
         };
 
@@ -1216,12 +1556,17 @@
             document.getElementById('centroSiniestro').value = siniestro.centro;
         };
 
-        window.deleteSiniestro = function(index) {
+        window.deleteSiniestro = async function(index) {
             if (confirm('¿Está seguro de que desea eliminar este siniestro?')) {
+                // Eliminar de Firebase si tiene ID
+                if (siniestros[index].firebaseId) {
+                    await deleteFromFirebase('siniestros', siniestros[index].firebaseId);
+                }
                 siniestros.splice(index, 1);
                 localStorage.setItem('siniestros', JSON.stringify(siniestros));
                 loadSiniestroData();
                 updateReports();
+                updateSyncStatus('success', 'Siniestro eliminado');
             }
         };
 
@@ -1235,12 +1580,17 @@
             document.getElementById('centroLavado').value = lavado.centro;
         };
 
-        window.deleteLavado = function(index) {
+        window.deleteLavado = async function(index) {
             if (confirm('¿Está seguro de que desea eliminar este lavado?')) {
+                // Eliminar de Firebase si tiene ID
+                if (lavados[index].firebaseId) {
+                    await deleteFromFirebase('lavados', lavados[index].firebaseId);
+                }
                 lavados.splice(index, 1);
                 localStorage.setItem('lavados', JSON.stringify(lavados));
                 loadLavadoData();
                 updateReports();
+                updateSyncStatus('success', 'Lavado eliminado');
             }
         };
 
@@ -1256,12 +1606,17 @@
             document.getElementById('centroGasoil').value = record.centro;
         };
 
-        window.deleteGasoil = function(index) {
+        window.deleteGasoil = async function(index) {
             if (confirm('¿Está seguro de que desea eliminar este registro de gasoil?')) {
+                // Eliminar de Firebase si tiene ID
+                if (gasoilRecords[index].firebaseId) {
+                    await deleteFromFirebase('gasoilRecords', gasoilRecords[index].firebaseId);
+                }
                 gasoilRecords.splice(index, 1);
                 localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
                 loadGasoilData();
                 updateReports();
+                updateSyncStatus('success', 'Gasoil eliminado');
             }
         };
 
@@ -1496,7 +1851,15 @@
             return item;
         }
 
-        function saveImportedData(type, importedData) {
+        async function saveImportedData(type, importedData) {
+            // Guardar cada registro individualmente con Firebase
+            for (const item of importedData) {
+                const firebaseId = await saveToFirebase(type, item);
+                if (firebaseId) {
+                    item.firebaseId = firebaseId;
+                }
+            }
+
             switch (type) {
                 case 'vehicles':
                     vehicles = [...vehicles, ...importedData];
@@ -1535,6 +1898,7 @@
                     break;
             }
             updateReports();
+            updateSyncStatus('success', 'Importación completada');
         }
 
         // Funciones de utilidad
@@ -1564,109 +1928,10 @@
             setupExportButtons();
         }
 
-        function setupVehicleForm() {
-            const form = document.getElementById('vehicleForm');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const id = document.getElementById('vehicleId').value;
-                    const vehicle = {
-                        placa: document.getElementById('placa').value,
-                        marca: document.getElementById('marca').value,
-                        modelo: document.getElementById('modelo').value,
-                        anio: document.getElementById('anio').value,
-                        centroOperaciones: document.getElementById('centroOperaciones').value,
-                        capacidadTanque: document.getElementById('capacidadTanque').value,
-                        departamentoAsignado: document.getElementById('departamentoAsignado').value,
-                        estado: document.getElementById('estado').value
-                    };
-
-                    if (id === '') {
-                        vehicles.push(vehicle);
-                    } else {
-                        vehicles[id] = vehicle;
-                    }
-
-                    localStorage.setItem('vehicles', JSON.stringify(vehicles));
-                    loadVehicleData();
-                    this.reset();
-                    document.getElementById('vehicleId').value = '';
-                    updateReports();
-                });
-            }
-
-            const deleteBtn = document.getElementById('deleteMassiveBtn');
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', function() {
-                    if (confirm('¿Está seguro de que desea eliminar TODOS los vehículos? Esta acción no se puede deshacer.')) {
-                        vehicles = [];
-                        localStorage.setItem('vehicles', JSON.stringify(vehicles));
-                        loadVehicleData();
-                        updateReports();
-                    }
-                });
-            }
-        }
-
-        function setupMaintenanceForm() {
-            const form = document.getElementById('maintenanceForm');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const id = document.getElementById('maintenanceId').value;
-                    const tipo = document.getElementById('tipoMantenimiento').value;
-                    
-                    const maintenance = {
-                        placa: document.getElementById('placaMantenimiento').value,
-                        tipo: tipo,
-                        fecha: document.getElementById('fechaMantenimiento').value,
-                        costo: document.getElementById('costoMantenimiento').value,
-                        proveedor: document.getElementById('proveedorTaller').value,
-                        centro: document.getElementById('centroMantenimiento').value
-                    };
-
-                    if (tipo === 'preventivo') {
-                        maintenance.kilometraje = document.getElementById('kilometrajePreventivo').value;
-                        maintenance.descripcion = document.getElementById('descripcionPreventivo').value;
-                    } else {
-                        maintenance.descripcion = document.getElementById('descripcionCorrectivo').value;
-                        maintenance.causa = document.getElementById('causaCorrectivo').value;
-                    }
-
-                    if (id === '') {
-                        maintenances.push(maintenance);
-                    } else {
-                        maintenances[id] = maintenance;
-                    }
-
-                    localStorage.setItem('maintenances', JSON.stringify(maintenances));
-                    loadMaintenanceData();
-                    this.reset();
-                    document.getElementById('maintenanceId').value = '';
-                    updateReports();
-                });
-
-                const tipoSelect = document.getElementById('tipoMantenimiento');
-                if (tipoSelect) {
-                    tipoSelect.addEventListener('change', function() {
-                        const tipo = this.value;
-                        document.getElementById('camposPreventivo').classList.add('hidden');
-                        document.getElementById('camposCorrectivo').classList.add('hidden');
-                        
-                        if (tipo === 'preventivo') {
-                            document.getElementById('camposPreventivo').classList.remove('hidden');
-                        } else if (tipo === 'correctivo') {
-                            document.getElementById('camposCorrectivo').classList.remove('hidden');
-                        }
-                    });
-                }
-            }
-        }
-
         function setupInspectionForm() {
             const form = document.getElementById('inspectionForm');
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const id = document.getElementById('inspectionId').value;
                     
@@ -1681,12 +1946,22 @@
                         kilometraje: document.getElementById('kilometrajeInspeccion').value,
                         fecha: document.getElementById('fechaInspeccion').value,
                         chequeo: chequeo,
-                        observaciones: document.getElementById('observacionesInspeccion').value
+                        observaciones: document.getElementById('observacionesInspeccion').value,
+                        lastUpdated: new Date().toISOString()
                     };
 
                     if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('inspections', inspection);
+                        if (firebaseId) {
+                            inspection.firebaseId = firebaseId;
+                        }
                         inspections.push(inspection);
                     } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (inspections[id].firebaseId) {
+                            await updateInFirebase('inspections', inspections[id].firebaseId, inspection);
+                        }
                         inspections[id] = inspection;
                     }
 
@@ -1694,6 +1969,7 @@
                     loadInspectionData();
                     this.reset();
                     document.getElementById('inspectionId').value = '';
+                    updateSyncStatus('success', 'Guardado en Firebase');
                 });
             }
         }
@@ -1701,7 +1977,7 @@
         function setupFuelForm() {
             const form = document.getElementById('fuelForm');
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const id = document.getElementById('fuelId').value;
                     const litros = parseFloat(document.getElementById('litros').value) || 0;
@@ -1710,12 +1986,22 @@
                         fecha: document.getElementById('fechaCombustible').value,
                         litros: litros,
                         costo: litros * 0.50,
-                        centro: document.getElementById('centroCombustible').value
+                        centro: document.getElementById('centroCombustible').value,
+                        lastUpdated: new Date().toISOString()
                     };
 
                     if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('fuelRecords', fuel);
+                        if (firebaseId) {
+                            fuel.firebaseId = firebaseId;
+                        }
                         fuelRecords.push(fuel);
                     } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (fuelRecords[id].firebaseId) {
+                            await updateInFirebase('fuelRecords', fuelRecords[id].firebaseId, fuel);
+                        }
                         fuelRecords[id] = fuel;
                     }
 
@@ -1724,6 +2010,7 @@
                     this.reset();
                     document.getElementById('fuelId').value = '';
                     updateReports();
+                    updateSyncStatus('success', 'Guardado en Firebase');
                 });
 
                 const litrosInput = document.getElementById('litros');
@@ -1739,7 +2026,7 @@
         function setupSiniestroForm() {
             const form = document.getElementById('siniestroForm');
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const id = document.getElementById('siniestroId').value;
                     const siniestro = {
@@ -1750,12 +2037,22 @@
                         lugar: document.getElementById('lugarSiniestro').value,
                         descripcion: document.getElementById('descripcionSiniestro').value,
                         costoReparacion: document.getElementById('costoReparacion').value,
-                        centro: document.getElementById('centroSiniestro').value
+                        centro: document.getElementById('centroSiniestro').value,
+                        lastUpdated: new Date().toISOString()
                     };
 
                     if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('siniestros', siniestro);
+                        if (firebaseId) {
+                            siniestro.firebaseId = firebaseId;
+                        }
                         siniestros.push(siniestro);
                     } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (siniestros[id].firebaseId) {
+                            await updateInFirebase('siniestros', siniestros[id].firebaseId, siniestro);
+                        }
                         siniestros[id] = siniestro;
                     }
 
@@ -1764,6 +2061,7 @@
                     this.reset();
                     document.getElementById('siniestroId').value = '';
                     updateReports();
+                    updateSyncStatus('success', 'Guardado en Firebase');
                 });
             }
         }
@@ -1771,19 +2069,29 @@
         function setupLavadoForm() {
             const form = document.getElementById('lavadoForm');
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const id = document.getElementById('lavadoId').value;
                     const lavado = {
                         placa: document.getElementById('placaLavado').value,
                         fecha: document.getElementById('fechaLavado').value,
                         costo: document.getElementById('costoLavado').value,
-                        centro: document.getElementById('centroLavado').value
+                        centro: document.getElementById('centroLavado').value,
+                        lastUpdated: new Date().toISOString()
                     };
 
                     if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('lavados', lavado);
+                        if (firebaseId) {
+                            lavado.firebaseId = firebaseId;
+                        }
                         lavados.push(lavado);
                     } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (lavados[id].firebaseId) {
+                            await updateInFirebase('lavados', lavados[id].firebaseId, lavado);
+                        }
                         lavados[id] = lavado;
                     }
 
@@ -1792,6 +2100,7 @@
                     this.reset();
                     document.getElementById('lavadoId').value = '';
                     updateReports();
+                    updateSyncStatus('success', 'Guardado en Firebase');
                 });
             }
         }
@@ -1799,7 +2108,7 @@
         function setupGasoilForm() {
             const form = document.getElementById('gasoilForm');
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const id = document.getElementById('gasoilId').value;
                     const litros = parseFloat(document.getElementById('litrosGasoil').value) || 0;
@@ -1810,12 +2119,22 @@
                         litros: litros,
                         flete: flete,
                         costo: (litros * 0.48) + flete,
-                        centro: document.getElementById('centroGasoil').value
+                        centro: document.getElementById('centroGasoil').value,
+                        lastUpdated: new Date().toISOString()
                     };
 
                     if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('gasoilRecords', gasoil);
+                        if (firebaseId) {
+                            gasoil.firebaseId = firebaseId;
+                        }
                         gasoilRecords.push(gasoil);
                     } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (gasoilRecords[id].firebaseId) {
+                            await updateInFirebase('gasoilRecords', gasoilRecords[id].firebaseId, gasoil);
+                        }
                         gasoilRecords[id] = gasoil;
                     }
 
@@ -1824,6 +2143,7 @@
                     this.reset();
                     document.getElementById('gasoilId').value = '';
                     updateReports();
+                    updateSyncStatus('success', 'Guardado en Firebase');
                 });
 
                 const litrosInput = document.getElementById('litrosGasoil');

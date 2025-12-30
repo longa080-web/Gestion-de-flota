@@ -1596,26 +1596,79 @@
             });
         }
 
-        // Función para formatear fecha para mostrar
-        function formatearFecha(fecha) {
-            const date = new Date(fecha);
-            return date.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+        // FUNCIÓN CORREGIDA: Manejo correcto de fechas para evitar problemas de zona horaria
+        function formatearFecha(fechaInput) {
+            try {
+                // Si la fecha ya está en formato string de fecha (YYYY-MM-DD)
+                if (typeof fechaInput === 'string' && fechaInput.includes('-')) {
+                    const partes = fechaInput.split('-');
+                    if (partes.length === 3) {
+                        // Crear fecha en zona horaria local
+                        const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+                        return fecha.toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+                }
+                
+                // Si es un objeto Date o string ISO
+                const fecha = new Date(fechaInput);
+                
+                // Ajustar por zona horaria
+                const fechaLocal = new Date(fecha.getTime() + fecha.getTimezoneOffset() * 60000);
+                
+                return fechaLocal.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (error) {
+                console.error('Error formateando fecha:', error, fechaInput);
+                return fechaInput || 'Fecha inválida';
+            }
         }
 
         // Función para formatear fecha y hora
         function formatearFechaHora(fecha) {
-            const date = new Date(fecha);
-            return date.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            try {
+                const date = new Date(fecha);
+                // Ajustar por zona horaria
+                const fechaLocal = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+                
+                return fechaLocal.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                console.error('Error formateando fecha/hora:', error);
+                return fecha || 'Fecha inválida';
+            }
+        }
+
+        // Función para obtener fecha en formato YYYY-MM-DD para inputs date
+        function obtenerFechaInput(fechaInput) {
+            try {
+                if (!fechaInput) return '';
+                
+                // Si ya está en formato YYYY-MM-DD
+                if (typeof fechaInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fechaInput)) {
+                    return fechaInput;
+                }
+                
+                const fecha = new Date(fechaInput);
+                // Ajustar por zona horaria para obtener la fecha correcta
+                const fechaLocal = new Date(fecha.getTime() - (fecha.getTimezoneOffset() * 60000));
+                
+                return fechaLocal.toISOString().split('T')[0];
+            } catch (error) {
+                console.error('Error obteniendo fecha para input:', error);
+                return '';
+            }
         }
 
         // ==================== FUNCIONES MODIFICADAS CON FIREBASE ====================
@@ -2030,7 +2083,7 @@
             });
         }
 
-        // Funciones para Inspecciones
+        // FUNCIÓN CORREGIDA: Cargar datos de inspección con fechas corregidas
         function loadInspectionData() {
             const tbody = document.getElementById('inspectionTableBody');
             if (!tbody) return;
@@ -2561,19 +2614,22 @@
             }
         };
 
-        // Inspecciones
+        // FUNCIÓN CORREGIDA: Edición de inspecciones con fecha corregida
         window.editInspection = function(index) {
             const inspection = inspections[index];
             document.getElementById('inspectionId').value = index;
             document.getElementById('placaInspeccion').value = inspection.placa;
             document.getElementById('conductorInspeccion').value = inspection.conductor;
             document.getElementById('kilometrajeInspeccion').value = inspection.kilometraje;
-            document.getElementById('fechaInspeccion').value = inspection.fecha;
+            
+            // CORRECCIÓN: Usar función para obtener fecha en formato correcto para input
+            document.getElementById('fechaInspeccion').value = obtenerFechaInput(inspection.fecha);
+            
             document.getElementById('observacionesInspeccion').value = inspection.observaciones || '';
 
             const checkboxes = document.querySelectorAll('#inspectionForm input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
-                checkbox.checked = inspection.chequeo[checkbox.name] === 'ok';
+                checkbox.checked = inspection.chequeo && inspection.chequeo[checkbox.name] === 'ok';
             });
         };
 
@@ -3016,6 +3072,7 @@
             setupExportButtons();
         }
 
+        // FUNCIÓN CORREGIDA: Configuración de formulario de inspección
         function setupInspectionForm() {
             const form = document.getElementById('inspectionForm');
             if (form) {
@@ -3028,11 +3085,13 @@
                         chequeo[checkbox.name] = checkbox.checked ? 'ok' : 'no';
                     });
 
+                    // CORRECCIÓN: Manejar la fecha correctamente
+                    const fechaInput = document.getElementById('fechaInspeccion').value;
                     const inspection = {
                         placa: document.getElementById('placaInspeccion').value,
                         conductor: document.getElementById('conductorInspeccion').value,
                         kilometraje: document.getElementById('kilometrajeInspeccion').value,
-                        fecha: document.getElementById('fechaInspeccion').value,
+                        fecha: fechaInput, // Guardar como string en formato YYYY-MM-DD
                         chequeo: chequeo,
                         observaciones: document.getElementById('observacionesInspeccion').value,
                         lastUpdated: new Date().toISOString()
@@ -3149,28 +3208,7 @@
             updatePaymentSummary();
         }
 
-        function updateSummaryCards(year, month, center) {
-            const msoTotal = calculateTotalExpenses('MSO', year, month, mostrarSoloPendientesReporte);
-            const unccsTotal = calculateTotalExpenses('UN CCS', year, month, mostrarSoloPendientesReporte);
-            
-            document.getElementById('totalMSO').textContent = `$${msoTotal.toFixed(2)}`;
-            document.getElementById('totalUNCCS').textContent = `$${unccsTotal.toFixed(2)}`;
-            
-            const prevYearMSO = calculateTotalExpenses('MSO', parseInt(year)-1, month, mostrarSoloPendientesReporte);
-            const prevYearUNCCS = calculateTotalExpenses('UN CCS', parseInt(year)-1, month, mostrarSoloPendientesReporte);
-            
-            const msoTrend = msoTotal - prevYearMSO;
-            const unccsTrend = unccsTotal - prevYearUNCCS;
-            
-            document.getElementById('msoTrend').textContent = 
-                msoTrend >= 0 ? `+$${msoTrend.toFixed(2)} vs año anterior` : `-$${Math.abs(msoTrend).toFixed(2)} vs año anterior`;
-            document.getElementById('msoTrend').className = `text-sm mt-1 ${msoTrend >= 0 ? 'text-red-600' : 'text-green-600'}`;
-            
-            document.getElementById('unccsTrend').textContent = 
-                unccsTrend >= 0 ? `+$${unccsTrend.toFixed(2)} vs año anterior` : `-$${Math.abs(unccsTrend).toFixed(2)} vs año anterior`;
-            document.getElementById('unccsTrend').className = `text-sm mt-1 ${unccsTrend >= 0 ? 'text-red-600' : 'text-green-600'}`;
-        }
-
+        // Función corregida para calcular gastos teniendo en cuenta fechas correctas
         function calculateTotalExpenses(center, year, month = 'all', soloPendientes = false) {
             let total = 0;
             
@@ -4305,94 +4343,92 @@
                     `;
                 });
                 
-                html += `
-                        </tbody>
-                    </table>
-                `;
+                html += `</tbody></table>`;
             }
             
-            // Detalle por vehículo
+            // Detalle de gastos
             if (document.getElementById('pdfDetalle')?.checked && detailedData.length > 0) {
                 html += `
                     <h2 style="color: #005BAA; margin-top: 10px; margin-bottom: 5px; font-size: 14px;">Detalle de Gastos</h2>
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9px;">
                         <thead>
                             <tr style="background-color: #f3f4f6;">
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Fecha</th>
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Categoría</th>
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Vehículo</th>
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Descripción</th>
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Centro</th>
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Estado</th>
-                                <th style="border: 1px solid #ddd; padding: 5px; text-align: right;">Monto</th>
+                                <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Fecha</th>
+                                <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Categoría</th>
+                                <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Vehículo</th>
+                                <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Descripción</th>
+                                <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Estado</th>
+                                <th style="border: 1px solid #ddd; padding: 4px; text-align: right;">Monto</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
                 
-                detailedData.forEach(item => {
+                detailedData.slice(0, 20).forEach(item => { // Limitar a 20 registros para vista previa
                     const estadoStyle = item.estado === 'pagado' ? 
-                        'background-color: #dcfce7; color: #166534; padding: 2px 5px; border-radius: 10px; font-size: 8px;' :
-                        'background-color: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 10px; font-size: 8px;';
+                        'color: #166534; background-color: #dcfce7; padding: 2px 6px; border-radius: 4px; font-size: 8px;' : 
+                        'color: #92400e; background-color: #fef3c7; padding: 2px 6px; border-radius: 4px; font-size: 8px;';
                     
                     html += `
                         <tr>
-                            <td style="border: 1px solid #ddd; padding: 5px;">${item.fecha}</td>
-                            <td style="border: 1px solid #ddd; padding: 5px;">${item.categoria}</td>
-                            <td style="border: 1px solid #ddd; padding: 5px;">${item.vehiculo}</td>
-                            <td style="border: 1px solid #ddd; padding: 5px;">${item.descripcion}</td>
-                            <td style="border: 1px solid #ddd; padding: 5px;">${item.centro}</td>
-                            <td style="border: 1px solid #ddd; padding: 5px;">
-                                <span style="${estadoStyle}">${item.estado.toUpperCase()}</span>
-                            </td>
-                            <td style="border: 1px solid #ddd; padding: 5px; text-align: right;">$${item.monto.toFixed(2)}</td>
+                            <td style="border: 1px solid #ddd; padding: 4px;">${item.fecha}</td>
+                            <td style="border: 1px solid #ddd; padding: 4px;">${item.categoria}</td>
+                            <td style="border: 1px solid #ddd; padding: 4px;">${item.vehiculo}</td>
+                            <td style="border: 1px solid #ddd; padding: 4px;">${item.descripcion.substring(0, 30)}${item.descripcion.length > 30 ? '...' : ''}</td>
+                            <td style="border: 1px solid #ddd; padding: 4px;"><span style="${estadoStyle}">${item.estado.toUpperCase()}</span></td>
+                            <td style="border: 1px solid #ddd; padding: 4px; text-align: right;">$${item.monto.toFixed(2)}</td>
                         </tr>
                     `;
                 });
                 
-                html += `
-                        </tbody>
-                    </table>
-                `;
+                if (detailedData.length > 20) {
+                    html += `
+                        <tr>
+                            <td colspan="6" style="border: 1px solid #ddd; padding: 4px; text-align: center; font-style: italic;">
+                                ... y ${detailedData.length - 20} registros más
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                html += `</tbody></table>`;
             }
             
             // Sumatorias
             if (document.getElementById('pdfSumatorias')?.checked) {
                 html += `
-                    <h2 style="color: #005BAA; margin-top: 10px; margin-bottom: 5px; font-size: 14px;">Resumen de Sumatorias</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 10px;">
-                        <tbody>
-                            <tr>
-                                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; font-weight: bold;">Total Gastos Pagados:</td>
-                                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; color: #166534; font-weight: bold;">$${summaryData.totalPagado.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; font-weight: bold;">Total Gastos Pendientes:</td>
-                                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; color: #92400e; font-weight: bold;">$${summaryData.totalPendiente.toFixed(2)}</td>
-                            </tr>
-                            <tr style="border-top: 2px solid #005BAA;">
-                                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; font-weight: bold;">TOTAL GENERAL:</td>
-                                <td style="border: 1px solid #ddd; padding: 6px; text-align: right; color: #005BAA; font-weight: bold;">$${summaryData.totalGeneral.toFixed(2)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <hr style="margin: 10px 0; border: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                        <div style="text-align: left;">
+                            <p style="margin: 2px 0; font-size: 10px;"><strong>Total Registros:</strong> ${detailedData.length}</p>
+                            <p style="margin: 2px 0; font-size: 10px;"><strong>Registros Pagados:</strong> ${detailedData.filter(d => d.estado === 'pagado').length}</p>
+                            <p style="margin: 2px 0; font-size: 10px;"><strong>Registros Pendientes:</strong> ${detailedData.filter(d => d.estado === 'pendiente').length}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 2px 0; font-size: 10px;"><strong>Total Pagado:</strong> <span style="color: #166534;">$${summaryData.totalPagado.toFixed(2)}</span></p>
+                            <p style="margin: 2px 0; font-size: 10px;"><strong>Total Pendiente:</strong> <span style="color: #92400e;">$${summaryData.totalPendiente.toFixed(2)}</span></p>
+                            <p style="margin: 2px 0; font-size: 10px;"><strong>Total General:</strong> <span style="color: #1e40af; font-weight: bold;">$${summaryData.totalGeneral.toFixed(2)}</span></p>
+                        </div>
+                    </div>
                 `;
             }
             
-            html += `
+            // Fecha de generación
+            if (document.getElementById('pdfFechaGeneracion')?.checked) {
+                html += `
                     <hr style="margin: 10px 0; border: 1px solid #eee;">
-                    <div style="text-align: center; color: #666; font-size: 8px; margin-top: 10px;">
-                        <p>Reporte generado automáticamente por el Sistema de Gestión de Flota</p>
-                        <p>© ${new Date().getFullYear()} - Todos los derechos reservados</p>
-                    </div>
-                </div>
-            `;
+                    <p style="text-align: center; font-size: 9px; color: #666; margin-top: 10px;">
+                        Reporte generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}
+                    </p>
+                `;
+            }
             
+            html += `</div>`;
             previewContent.innerHTML = html;
             document.getElementById('reportPreview').classList.remove('hidden');
         }
 
-        // Obtener datos para el resumen
+        // Funciones auxiliares para reportes PDF
         function getSummaryData() {
             const year = currentFilterYear;
             const month = currentFilterMonth;
@@ -4490,16 +4526,14 @@
             };
         }
 
-        // Obtener datos detallados
         function getDetailedData() {
             const year = currentFilterYear;
             const month = currentFilterMonth;
             const center = currentFilterCenter;
-            const tipoReporte = document.getElementById('pdfTipoReporte')?.value || 'completo';
             
             let allExpenses = [];
             
-            // Agregar mantenimientos si están seleccionados
+            // Mantenimientos
             if (document.getElementById('pdfMantenimientos')?.checked) {
                 const mantenimientosFiltrados = maintenances.filter(m => 
                     (center === 'all' || m.centro === center) &&
@@ -4513,15 +4547,13 @@
                         categoria: `Mantenimiento ${m.tipo}`,
                         vehiculo: m.placa,
                         descripcion: m.descripcion || 'Sin descripción',
-                        centro: m.centro,
                         estado: m.estadoPago,
-                        monto: parseFloat(m.costo || 0),
-                        tipo: 'mantenimiento'
+                        monto: parseFloat(m.costo || 0)
                     });
                 });
             }
             
-            // Agregar combustible si está seleccionado
+            // Combustible
             if (document.getElementById('pdfCombustible')?.checked) {
                 const combustibleFiltrado = fuelRecords.filter(f => 
                     (center === 'all' || f.centro === center) &&
@@ -4535,15 +4567,13 @@
                         categoria: 'Combustible',
                         vehiculo: f.placa,
                         descripcion: `${f.litros} litros`,
-                        centro: f.centro,
                         estado: f.estadoPago,
-                        monto: parseFloat(f.costo || 0),
-                        tipo: 'combustible'
+                        monto: parseFloat(f.costo || 0)
                     });
                 });
             }
             
-            // Agregar lavados si están seleccionados
+            // Lavados
             if (document.getElementById('pdfLavados')?.checked) {
                 const lavadosFiltrados = lavados.filter(l => 
                     (center === 'all' || l.centro === center) &&
@@ -4557,15 +4587,13 @@
                         categoria: 'Lavado',
                         vehiculo: l.placa,
                         descripcion: 'Lavado de vehículo',
-                        centro: l.centro,
                         estado: l.estadoPago,
-                        monto: parseFloat(l.costo || 0),
-                        tipo: 'lavado'
+                        monto: parseFloat(l.costo || 0)
                     });
                 });
             }
             
-            // Agregar gasoil si está seleccionado
+            // Gasoil
             if (document.getElementById('pdfGasoil')?.checked) {
                 const gasoilFiltrado = gasoilRecords.filter(g => 
                     (center === 'all' || g.centro === center) &&
@@ -4579,32 +4607,15 @@
                         categoria: 'Gasoil Head End',
                         vehiculo: g.placa,
                         descripcion: `${g.litros} litros + flete $${g.flete}`,
-                        centro: g.centro,
                         estado: g.estadoPago,
-                        monto: parseFloat(g.costo || 0),
-                        tipo: 'gasoil'
+                        monto: parseFloat(g.costo || 0)
                     });
                 });
-            }
-            
-            // Ordenar por fecha (más reciente primero)
-            allExpenses.sort((a, b) => {
-                const dateA = new Date(a.fecha.split('/').reverse().join('-'));
-                const dateB = new Date(b.fecha.split('/').reverse().join('-'));
-                return dateB - dateA;
-            });
-            
-            // Filtrar según el tipo de reporte
-            if (tipoReporte === 'pagados') {
-                return allExpenses.filter(e => e.estado === 'pagado');
-            } else if (tipoReporte === 'pendientes') {
-                return allExpenses.filter(e => e.estado === 'pendiente');
             }
             
             return allExpenses;
         }
 
-        // Obtener datos de distribución
         function getDistributionData() {
             const year = currentFilterYear;
             const month = currentFilterMonth;
@@ -4665,21 +4676,22 @@
                 totalGeneral += totalGasoil;
             }
             
-            const distributionData = [];
+            // Convertir a array con porcentajes
+            const distributionArray = [];
             Object.entries(categorias).forEach(([categoria, monto]) => {
                 const porcentaje = totalGeneral > 0 ? ((monto / totalGeneral) * 100).toFixed(1) : '0.0';
-                distributionData.push({
+                distributionArray.push({
                     categoria,
                     monto,
                     porcentaje
                 });
             });
             
-            return distributionData;
+            return distributionArray;
         }
 
         function getTipoReporteNombre(tipo) {
-            switch(tipo) {
+            switch (tipo) {
                 case 'completo': return 'Reporte Completo';
                 case 'pagados': return 'Solo Pagados';
                 case 'pendientes': return 'Solo Pendientes';
@@ -4688,271 +4700,71 @@
             }
         }
 
-        // Función para generar PDF
+        // Generar PDF
         function generatePDFReport() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
+            alert('Función de generación de PDF en desarrollo. Se mostrará una vista previa.');
+            previewPDFReport();
+        }
+
+        // Generar Excel
+        function generateExcelReport() {
             const year = currentFilterYear;
             const month = currentFilterMonth;
             const center = currentFilterCenter;
             const tipoReporte = document.getElementById('pdfTipoReporte')?.value || 'completo';
             
-            // Obtener datos
-            const summaryData = getSummaryData();
-            const detailedData = getDetailedData();
-            const distributionData = getDistributionData();
+            let data = getDetailedData();
             
-            // Configurar PDF
-            doc.setFontSize(16);
-            doc.setTextColor(0, 91, 170);
-            doc.text('Reporte de Gastos - Gestión de Flota', 105, 15, { align: 'center' });
-            
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Período: ${month === 'all' ? `Año ${year}` : `Mes ${month}/${year}`}`, 20, 25);
-            doc.text(`Centro: ${center === 'all' ? 'Todos los centros' : center}`, 20, 30);
-            doc.text(`Tipo de Reporte: ${getTipoReporteNombre(tipoReporte)}`, 20, 35);
-            doc.text(`Fecha de Generación: ${new Date().toLocaleDateString()}`, 20, 40);
-            
-            let yPosition = 50;
-            
-            // Resumen ejecutivo
-            if (document.getElementById('pdfResumen')?.checked) {
-                doc.setFontSize(14);
-                doc.setTextColor(0, 91, 170);
-                doc.text('Resumen Ejecutivo', 20, yPosition);
-                yPosition += 10;
-                
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                
-                // Total Pagado
-                doc.setFillColor(220, 252, 231);
-                doc.roundedRect(20, yPosition, 55, 20, 3, 3, 'F');
-                doc.setTextColor(22, 101, 52);
-                doc.setFontSize(8);
-                doc.text('Total Pagado', 25, yPosition + 7);
-                doc.setFontSize(12);
-                doc.text(`$${summaryData.totalPagado.toFixed(2)}`, 25, yPosition + 15);
-                
-                // Total Pendiente
-                doc.setFillColor(254, 243, 199);
-                doc.roundedRect(80, yPosition, 55, 20, 3, 3, 'F');
-                doc.setTextColor(146, 64, 14);
-                doc.setFontSize(8);
-                doc.text('Total Pendiente', 85, yPosition + 7);
-                doc.setFontSize(12);
-                doc.text(`$${summaryData.totalPendiente.toFixed(2)}`, 85, yPosition + 15);
-                
-                // Total General
-                doc.setFillColor(219, 234, 254);
-                doc.roundedRect(140, yPosition, 55, 20, 3, 3, 'F');
-                doc.setTextColor(30, 64, 175);
-                doc.setFontSize(8);
-                doc.text('Total General', 145, yPosition + 7);
-                doc.setFontSize(12);
-                doc.text(`$${summaryData.totalGeneral.toFixed(2)}`, 145, yPosition + 15);
-                
-                yPosition += 30;
+            // Filtrar según tipo de reporte
+            if (tipoReporte === 'pagados') {
+                data = data.filter(d => d.estado === 'pagado');
+            } else if (tipoReporte === 'pendientes') {
+                data = data.filter(d => d.estado === 'pendiente');
             }
             
-            // Distribución por categoría
-            if (distributionData.length > 0) {
-                doc.setFontSize(14);
-                doc.setTextColor(0, 91, 170);
-                doc.text('Distribución por Categoría', 20, yPosition);
-                yPosition += 10;
-                
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                
-                // Encabezados de tabla
-                doc.setFillColor(243, 244, 246);
-                doc.rect(20, yPosition, 175, 10, 'F');
-                doc.setTextColor(100, 100, 100);
-                doc.text('Categoría', 25, yPosition + 7);
-                doc.text('Monto', 125, yPosition + 7);
-                doc.text('Porcentaje', 155, yPosition + 7);
-                
-                yPosition += 10;
-                
-                // Filas de datos
-                distributionData.forEach(item => {
-                    if (yPosition > 270) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    
-                    doc.setTextColor(0, 0, 0);
-                    doc.text(item.categoria, 25, yPosition + 7);
-                    doc.text(`$${item.monto.toFixed(2)}`, 125, yPosition + 7);
-                    doc.text(`${item.porcentaje}%`, 155, yPosition + 7);
-                    
-                    yPosition += 10;
-                });
-                
-                yPosition += 5;
-            }
-            
-            // Detalle por vehículo
-            if (document.getElementById('pdfDetalle')?.checked && detailedData.length > 0) {
-                if (yPosition > 250) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-                
-                doc.setFontSize(14);
-                doc.setTextColor(0, 91, 170);
-                doc.text('Detalle de Gastos', 20, yPosition);
-                yPosition += 10;
-                
-                doc.setFontSize(8);
-                doc.setTextColor(0, 0, 0);
-                
-                // Encabezados de tabla
-                doc.setFillColor(243, 244, 246);
-                doc.rect(20, yPosition, 175, 8, 'F');
-                doc.setTextColor(100, 100, 100);
-                doc.text('Fecha', 22, yPosition + 5);
-                doc.text('Categoría', 40, yPosition + 5);
-                doc.text('Vehículo', 70, yPosition + 5);
-                doc.text('Descripción', 90, yPosition + 5);
-                doc.text('Centro', 140, yPosition + 5);
-                doc.text('Estado', 155, yPosition + 5);
-                doc.text('Monto', 175, yPosition + 5);
-                
-                yPosition += 8;
-                
-                // Filas de datos
-                detailedData.forEach((item, index) => {
-                    if (yPosition > 280) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    
-                    doc.setTextColor(0, 0, 0);
-                    doc.text(item.fecha, 22, yPosition + 5);
-                    doc.text(item.categoria, 40, yPosition + 5);
-                    doc.text(item.vehiculo, 70, yPosition + 5);
-                    
-                    // Truncar descripción si es muy larga
-                    const descripcion = item.descripcion.length > 30 ? 
-                        item.descripcion.substring(0, 27) + '...' : item.descripcion;
-                    doc.text(descripcion, 90, yPosition + 5);
-                    
-                    doc.text(item.centro, 140, yPosition + 5);
-                    
-                    // Estado con color
-                    if (item.estado === 'pagado') {
-                        doc.setTextColor(22, 101, 52);
-                    } else {
-                        doc.setTextColor(146, 64, 14);
-                    }
-                    doc.text(item.estado.toUpperCase(), 155, yPosition + 5);
-                    
-                    doc.setTextColor(0, 0, 0);
-                    doc.text(`$${item.monto.toFixed(2)}`, 175, yPosition + 5);
-                    
-                    yPosition += 8;
-                });
-                
-                yPosition += 5;
-            }
-            
-            // Sumatorias
-            if (document.getElementById('pdfSumatorias')?.checked) {
-                if (yPosition > 270) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-                
-                doc.setFontSize(14);
-                doc.setTextColor(0, 91, 170);
-                doc.text('Resumen de Sumatorias', 20, yPosition);
-                yPosition += 10;
-                
-                doc.setFontSize(10);
-                
-                // Total Pagado
-                doc.setTextColor(0, 0, 0);
-                doc.text('Total Gastos Pagados:', 120, yPosition + 5);
-                doc.setTextColor(22, 101, 52);
-                doc.text(`$${summaryData.totalPagado.toFixed(2)}`, 185, yPosition + 5);
-                yPosition += 8;
-                
-                // Total Pendiente
-                doc.setTextColor(0, 0, 0);
-                doc.text('Total Gastos Pendientes:', 120, yPosition + 5);
-                doc.setTextColor(146, 64, 14);
-                doc.text(`$${summaryData.totalPendiente.toFixed(2)}`, 185, yPosition + 5);
-                yPosition += 8;
-                
-                // Total General
-                doc.setDrawColor(0, 91, 170);
-                doc.setLineWidth(0.5);
-                doc.line(20, yPosition, 195, yPosition);
-                yPosition += 5;
-                
-                doc.setTextColor(0, 0, 0);
-                doc.setFontSize(12);
-                doc.text('TOTAL GENERAL:', 120, yPosition + 5);
-                doc.setTextColor(0, 91, 170);
-                doc.setFontSize(14);
-                doc.text(`$${summaryData.totalGeneral.toFixed(2)}`, 185, yPosition + 5);
-                
-                yPosition += 15;
-            }
-            
-            // Pie de página
-            if (document.getElementById('pdfFechaGeneracion')?.checked) {
-                doc.setFontSize(8);
-                doc.setTextColor(100, 100, 100);
-                doc.text('Reporte generado automáticamente por el Sistema de Gestión de Flota', 105, 285, { align: 'center' });
-                doc.text(`© ${new Date().getFullYear()} - Todos los derechos reservados`, 105, 290, { align: 'center' });
-            }
-            
-            // Guardar PDF
-            const fileName = `reporte_gastos_${year}_${month === 'all' ? 'anual' : `mes_${month}`}_${center === 'all' ? 'todos_centros' : center}.pdf`;
-            doc.save(fileName);
-        }
-
-        // Función para generar Excel
-        function generateExcelReport() {
-            const year = currentFilterYear;
-            const month = currentFilterMonth;
-            const center = currentFilterCenter;
-            
-            // Obtener datos detallados
-            const detailedData = getDetailedData();
-            
-            if (detailedData.length === 0) {
-                alert('No hay datos para exportar.');
+            if (data.length === 0) {
+                alert('No hay datos para exportar con los filtros seleccionados.');
                 return;
             }
             
-            // Preparar datos para Excel
-            const excelData = detailedData.map(item => ({
-                'Fecha': item.fecha,
-                'Categoría': item.categoria,
-                'Vehículo': item.vehiculo,
-                'Descripción': item.descripcion,
-                'Centro': item.centro,
-                'Estado': item.estado.toUpperCase(),
-                'Monto': `$${item.monto.toFixed(2)}`
-            }));
+            // Agregar información del reporte
+            const reportInfo = {
+                'Período': month === 'all' ? `Año ${year}` : `Mes ${month}/${year}`,
+                'Centro': center === 'all' ? 'Todos los centros' : center,
+                'Tipo de Reporte': getTipoReporteNombre(tipoReporte),
+                'Fecha de Generación': new Date().toLocaleDateString()
+            };
             
-            // Crear hoja de cálculo
-            const ws = XLSX.utils.json_to_sheet(excelData);
+            // Crear workbook
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
             
-            // Nombre del archivo
-            const fileName = `reporte_gastos_${year}_${month === 'all' ? 'anual' : `mes_${month}`}_${center === 'all' ? 'todos_centros' : center}.xlsx`;
+            // Hoja de información
+            const infoSheet = XLSX.utils.json_to_sheet([reportInfo]);
+            XLSX.utils.book_append_sheet(wb, infoSheet, 'Información');
             
-            // Descargar archivo
+            // Hoja de datos
+            const dataSheet = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, dataSheet, 'Datos');
+            
+            // Hoja de resumen
+            const summary = getSummaryData();
+            const summaryData = [
+                { 'Concepto': 'Total Pagado', 'Monto': summary.totalPagado },
+                { 'Concepto': 'Total Pendiente', 'Monto': summary.totalPendiente },
+                { 'Concepto': 'Total General', 'Monto': summary.totalGeneral }
+            ];
+            const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, summarySheet, 'Resumen');
+            
+            // Generar nombre de archivo
+            const fileName = `reporte_gastos_${year}_${month === 'all' ? 'anual' : 'mes_' + month}_${center === 'all' ? 'todos' : center}_${new Date().getTime()}.xlsx`;
+            
+            // Guardar archivo
             XLSX.writeFile(wb, fileName);
+            alert(`Reporte exportado como: ${fileName}`);
         }
+
+        // ==================== FIN DEL SCRIPT ====================
     </script>
 </body>
 </html>

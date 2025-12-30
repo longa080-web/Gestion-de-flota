@@ -49,6 +49,50 @@
         .tab-link:not(.active) span:hover { color: #005BAA; }
         .tab-link.active svg path { fill: #005BAA; }
         .tab-link:not(.active) svg:hover path { fill: #005BAA; }
+        
+        /* Estilos para el sistema de pagos */
+        .estado-pagado {
+            background-color: #dcfce7;
+            color: #166534;
+            font-weight: 600;
+        }
+
+        .estado-pendiente {
+            background-color: #fef3c7;
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .badge-pagado {
+            background-color: #10b981;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-pendiente {
+            background-color: #f59e0b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-no-aplica {
+            background-color: #6b7280;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .filtro-activo {
+            background-color: #fbbf24 !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -61,13 +105,17 @@
                 <button id="syncButton" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
                     Sincronizar
                 </button>
+                <!-- Mostrar total pendiente -->
+                <div id="totalPendienteBadge" class="hidden bg-red-500 text-white px-3 py-1 rounded text-sm">
+                    Pendiente: $0.00
+                </div>
             </div>
         </div>
     </header>
 
     <main class="container mx-auto p-6">
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-            <div class="flex border-b border-gray-200">
+            <div class="flex border-b border-gray-200 overflow-x-auto">
                 <button class="tab-link active focus:outline-none p-4" data-tab-id="vehiculos">
                     <span class="font-medium text-lg border-b-2 border-transparent pb-4">Registro de Vehículos</span>
                 </button>
@@ -191,6 +239,13 @@
                                 <option value="correctivo">Correctivo</option>
                             </select>
                         </div>
+                        <div>
+                            <label for="estadoPagoMantenimiento" class="block text-sm font-medium text-gray-700">Estado de Pago</label>
+                            <select id="estadoPagoMantenimiento" name="estadoPagoMantenimiento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="pendiente" selected>Pendiente de Pago</option>
+                                <option value="pagado">Pagado</option>
+                            </select>
+                        </div>
                         <div id="camposPreventivo" class="hidden">
                             <label for="kilometrajePreventivo" class="block text-sm font-medium text-gray-700">Kilometraje (Preventivo)</label>
                             <input type="number" id="kilometrajePreventivo" name="kilometrajePreventivo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2">
@@ -234,6 +289,9 @@
                             <button id="importMaintenanceBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Mantenimientos</button>
                         </div>
                         <input type="text" id="searchMaintenanceInput" placeholder="Buscar mantenimiento..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="togglePendientesMantenimiento" class="ml-4 bg-yellow-500 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-yellow-600 transition duration-300">
+                            Mostrar Solo Pendientes
+                        </button>
                         <button id="exportMaintenanceBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
                     </div>
 
@@ -247,6 +305,7 @@
                                     <th class="py-3 px-6 text-left">Costo</th>
                                     <th class="py-3 px-6 text-left">Proveedor/Taller</th>
                                     <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-left">Estado de Pago</th>
                                     <th class="py-3 px-6 text-left">Descripción</th>
                                     <th class="py-3 px-6 text-center">Acciones</th>
                                 </tr>
@@ -342,6 +401,13 @@
                             <input list="placasList" id="placaCombustible" name="placaCombustible" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
                         </div>
                         <div>
+                            <label for="estadoPagoCombustible" class="block text-sm font-medium text-gray-700">Estado de Pago</label>
+                            <select id="estadoPagoCombustible" name="estadoPagoCombustible" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="pendiente" selected>Pendiente de Pago</option>
+                                <option value="pagado">Pagado</option>
+                            </select>
+                        </div>
+                        <div>
                             <label for="fechaCombustible" class="block text-sm font-medium text-gray-700">Fecha</label>
                             <input type="date" id="fechaCombustible" name="fechaCombustible" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
                         </div>
@@ -372,6 +438,9 @@
                             <button id="importFuelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Combustible</button>
                         </div>
                         <input type="text" id="searchFuelInput" placeholder="Buscar combustible..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="togglePendientesCombustible" class="ml-4 bg-yellow-500 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-yellow-600 transition duration-300">
+                            Mostrar Solo Pendientes
+                        </button>
                         <button id="exportFuelBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
                     </div>
 
@@ -384,6 +453,7 @@
                                     <th class="py-3 px-6 text-left">Litros</th>
                                     <th class="py-3 px-6 text-left">Costo</th>
                                     <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-left">Estado de Pago</th>
                                     <th class="py-3 px-6 text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -479,6 +549,13 @@
                             <input list="placasList" id="placaLavado" name="placaLavado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
                         </div>
                         <div>
+                            <label for="estadoPagoLavado" class="block text-sm font-medium text-gray-700">Estado de Pago</label>
+                            <select id="estadoPagoLavado" name="estadoPagoLavado" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="pendiente" selected>Pendiente de Pago</option>
+                                <option value="pagado">Pagado</option>
+                            </select>
+                        </div>
+                        <div>
                             <label for="fechaLavado" class="block text-sm font-medium text-gray-700">Fecha</label>
                             <input type="date" id="fechaLavado" name="fechaLavado" class="mt-1 block w-full rounded-md border-gray-300 shadowSm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
                         </div>
@@ -505,6 +582,9 @@
                             <button id="importLavadoBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Lavados</button>
                         </div>
                         <input type="text" id="searchLavadoInput" placeholder="Buscar lavado..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="togglePendientesLavado" class="ml-4 bg-yellow-500 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-yellow-600 transition duration-300">
+                            Mostrar Solo Pendientes
+                        </button>
                         <button id="exportLavadoBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
                     </div>
 
@@ -516,6 +596,7 @@
                                     <th class="py-3 px-6 text-left">Fecha</th>
                                     <th class="py-3 px-6 text-left">Costo</th>
                                     <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-left">Estado de Pago</th>
                                     <th class="py-3 px-6 text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -533,6 +614,13 @@
                         <div>
                             <label for="placaGasoil" class="block text-sm font-medium text-gray-700">Placa</label>
                             <input list="placasList" id="placaGasoil" name="placaGasoil" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                        </div>
+                        <div>
+                            <label for="estadoPagoGasoil" class="block text-sm font-medium text-gray-700">Estado de Pago</label>
+                            <select id="estadoPagoGasoil" name="estadoPagoGasoil" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" required>
+                                <option value="pendiente" selected>Pendiente de Pago</option>
+                                <option value="pagado">Pagado</option>
+                            </select>
                         </div>
                         <div>
                             <label for="fechaGasoil" class="block text-sm font-medium text-gray-700">Fecha</label>
@@ -569,6 +657,9 @@
                             <button id="importGasoilBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition duration-300">Importar Gasoil</button>
                         </div>
                         <input type="text" id="searchGasoilInput" placeholder="Buscar gasoil..." class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-inter-primary ml-4">
+                        <button id="togglePendientesGasoil" class="ml-4 bg-yellow-500 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-yellow-600 transition duration-300">
+                            Mostrar Solo Pendientes
+                        </button>
                         <button id="exportGasoilBtn" class="ml-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">Exportar a Excel</button>
                     </div>
 
@@ -582,6 +673,7 @@
                                     <th class="py-3 px-6 text-left">Flete</th>
                                     <th class="py-3 px-6 text-left">Costo Total</th>
                                     <th class="py-3 px-6 text-left">Centro de Operaciones</th>
+                                    <th class="py-3 px-6 text-left">Estado de Pago</th>
                                     <th class="py-3 px-6 text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -632,9 +724,14 @@
                                 </select>
                             </div>
                         </div>
-                        <button id="applyFilters" class="mt-4 bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">
-                            Aplicar Filtros
-                        </button>
+                        <div class="mt-4 flex space-x-4">
+                            <button id="applyFilters" class="bg-inter-primary text-white font-bold py-2 px-4 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300">
+                                Aplicar Filtros
+                            </button>
+                            <button id="mostrarSoloPendientesReporte" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-yellow-600 transition duration-300">
+                                Solo Pendientes de Pago
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Resumen de Gastos por Centro -->
@@ -650,14 +747,14 @@
                             <p class="text-sm text-gray-600 mt-1" id="unccsTrend"></p>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Mayor Gasto</h3>
-                            <p class="text-2xl font-bold text-red-600" id="highestSpender">-</p>
-                            <p class="text-sm text-gray-600 mt-1" id="highestAmount">$0</p>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total Pendiente</h3>
+                            <p class="text-3xl font-bold text-yellow-600" id="totalPendiente">$0</p>
+                            <p class="text-sm text-gray-600 mt-1" id="pendienteInfo"></p>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Menor Gasto</h3>
-                            <p class="text-2xl font-bold text-green-600" id="lowestSpender">-</p>
-                            <p class="text-sm text-gray-600 mt-1" id="lowestAmount">$0</p>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Total Pagado</h3>
+                            <p class="text-3xl font-bold text-green-600" id="totalPagado">$0</p>
+                            <p class="text-sm text-gray-600 mt-1" id="pagadoInfo"></p>
                         </div>
                     </div>
 
@@ -859,6 +956,16 @@
         let monthlyComparisonChart = null;
         let expenseDistributionChart = null;
 
+        // Variables para el control de pagos
+        let mostrarSoloPendientes = {
+            mantenimientos: false,
+            combustible: false,
+            lavados: false,
+            gasoil: false
+        };
+        
+        let mostrarSoloPendientesReporte = false;
+
         // ==================== FUNCIONES DE FIREBASE ====================
         
         // Función para guardar en Firebase
@@ -982,6 +1089,9 @@
                 lavados = fbLavados.length > 0 ? fbLavados : lavados;
                 gasoilRecords = fbGasoil.length > 0 ? fbGasoil : gasoilRecords;
 
+                // Asegurar que todos los registros tengan estado de pago
+                ensurePaymentStatus();
+
                 // Guardar en localStorage como respaldo
                 localStorage.setItem('vehicles', JSON.stringify(vehicles));
                 localStorage.setItem('maintenances', JSON.stringify(maintenances));
@@ -997,11 +1107,28 @@
                 // Recargar la interfaz
                 loadAllData();
                 updateReports();
+                updateTotalPendienteHeader();
                 
             } catch (error) {
                 console.error('❌ Error en sincronización:', error);
                 updateSyncStatus('error', 'Error en sincronización');
             }
+        }
+
+        // Función para asegurar que todos los registros tengan estado de pago
+        function ensurePaymentStatus() {
+            maintenances.forEach(m => {
+                if (!m.estadoPago) m.estadoPago = 'pendiente';
+            });
+            fuelRecords.forEach(f => {
+                if (!f.estadoPago) f.estadoPago = 'pendiente';
+            });
+            lavados.forEach(l => {
+                if (!l.estadoPago) l.estadoPago = 'pendiente';
+            });
+            gasoilRecords.forEach(g => {
+                if (!g.estadoPago) g.estadoPago = 'pendiente';
+            });
         }
 
         // Función para actualizar el estado de sincronización
@@ -1102,7 +1229,9 @@
             }
         };
 
-        // Función modificada para guardar mantenimientos
+        // ==================== SISTEMA DE CONTROL DE PAGOS ====================
+
+        // Función modificada para guardar mantenimientos con estado de pago
         async function setupMaintenanceForm() {
             const form = document.getElementById('maintenanceForm');
             if (form) {
@@ -1118,6 +1247,7 @@
                         costo: document.getElementById('costoMantenimiento').value,
                         proveedor: document.getElementById('proveedorTaller').value,
                         centro: document.getElementById('centroMantenimiento').value,
+                        estadoPago: document.getElementById('estadoPagoMantenimiento').value,
                         lastUpdated: new Date().toISOString()
                     };
 
@@ -1149,6 +1279,7 @@
                     this.reset();
                     document.getElementById('maintenanceId').value = '';
                     updateReports();
+                    updateTotalPendienteHeader();
                     updateSyncStatus('success', 'Guardado en Firebase');
                 });
 
@@ -1167,7 +1298,46 @@
                     });
                 }
             }
+
+            // Configurar botón de filtro para mantenimientos
+            const toggleBtn = document.getElementById('togglePendientesMantenimiento');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    mostrarSoloPendientes.mantenimientos = !mostrarSoloPendientes.mantenimientos;
+                    this.textContent = mostrarSoloPendientes.mantenimientos ? 
+                        'Mostrar Todos' : 'Mostrar Solo Pendientes';
+                    this.classList.toggle('bg-yellow-500', !mostrarSoloPendientes.mantenimientos);
+                    this.classList.toggle('bg-gray-500', mostrarSoloPendientes.mantenimientos);
+                    loadMaintenanceData();
+                });
+            }
         }
+
+        // Función para alternar estado de pago de mantenimientos
+        window.toggleEstadoPagoMantenimiento = async function(index) {
+            if (index < 0 || index >= maintenances.length) return;
+            
+            const nuevoEstado = maintenances[index].estadoPago === 'pagado' ? 'pendiente' : 'pagado';
+            const confirmacion = confirm(`¿Desea cambiar el estado de pago a "${nuevoEstado.toUpperCase()}"?`);
+            
+            if (confirmacion) {
+                // Actualizar en Firebase si tiene ID
+                if (maintenances[index].firebaseId) {
+                    await updateInFirebase('maintenances', maintenances[index].firebaseId, {
+                        ...maintenances[index],
+                        estadoPago: nuevoEstado,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+                
+                maintenances[index].estadoPago = nuevoEstado;
+                localStorage.setItem('maintenances', JSON.stringify(maintenances));
+                loadMaintenanceData();
+                updateReports();
+                updateTotalPendienteHeader();
+                updateSyncStatus('success', 'Estado de pago actualizado');
+            }
+        };
 
         // Función modificada para eliminar mantenimiento
         window.deleteMaintenance = async function(index) {
@@ -1180,6 +1350,7 @@
                 localStorage.setItem('maintenances', JSON.stringify(maintenances));
                 loadMaintenanceData();
                 updateReports();
+                updateTotalPendienteHeader();
                 updateSyncStatus('success', 'Mantenimiento eliminado');
             }
         };
@@ -1200,6 +1371,7 @@
             setupImportButtons();
             setupYearSelector();
             updateReports();
+            updateTotalPendienteHeader();
             
             // Sincronizar con Firebase al cargar la página
             setTimeout(() => {
@@ -1300,15 +1472,35 @@
             updatePlacasList();
         }
 
-        // Funciones para Mantenimientos
+        // Funciones para Mantenimientos con sistema de pagos
         function loadMaintenanceData() {
             const tbody = document.getElementById('maintenanceTableBody');
             if (!tbody) return;
             
             tbody.innerHTML = '';
-            maintenances.forEach((maintenance, index) => {
+            
+            let mantenimientosFiltrados = maintenances;
+            
+            // Aplicar filtro de pendientes si está activado
+            if (mostrarSoloPendientes.mantenimientos) {
+                mantenimientosFiltrados = maintenances.filter(m => m.estadoPago === 'pendiente');
+            }
+            
+            mantenimientosFiltrados.forEach((maintenance, index) => {
                 const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.className = `border-b border-gray-200 hover:bg-gray-100 ${maintenance.estadoPago === 'pagado' ? 'estado-pagado' : 'estado-pendiente'}`;
+                
+                // Encontrar el índice real en el array original
+                const originalIndex = maintenances.findIndex(m => 
+                    m.placa === maintenance.placa && 
+                    m.fecha === maintenance.fecha && 
+                    m.costo === maintenance.costo
+                );
+                
+                const estadoPagoBadge = maintenance.estadoPago === 'pagado' ? 
+                    '<span class="badge-pagado">PAGADO</span>' : 
+                    '<span class="badge-pendiente">PENDIENTE</span>';
+                
                 row.innerHTML = `
                     <td class="py-3 px-6 text-left whitespace-nowrap">${maintenance.placa}</td>
                     <td class="py-3 px-6 text-left">${maintenance.tipo}</td>
@@ -1316,10 +1508,14 @@
                     <td class="py-3 px-6 text-left">$${maintenance.costo}</td>
                     <td class="py-3 px-6 text-left">${maintenance.proveedor}</td>
                     <td class="py-3 px-6 text-left">${maintenance.centro}</td>
+                    <td class="py-3 px-6 text-left">${estadoPagoBadge}</td>
                     <td class="py-3 px-6 text-left">${maintenance.descripcion || 'N/A'}</td>
                     <td class="py-3 px-6 text-center">
-                        <button onclick="editMaintenance(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
-                        <button onclick="deleteMaintenance(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                        <button onclick="editMaintenance(${originalIndex})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="toggleEstadoPagoMantenimiento(${originalIndex})" class="bg-${maintenance.estadoPago === 'pagado' ? 'yellow' : 'green'}-500 text-white px-3 py-1 rounded hover:bg-${maintenance.estadoPago === 'pagado' ? 'yellow' : 'green'}-600 transition duration-300 ml-2">
+                            ${maintenance.estadoPago === 'pagado' ? 'Marcar Pendiente' : 'Marcar Pagado'}
+                        </button>
+                        <button onclick="deleteMaintenance(${originalIndex})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1356,29 +1552,143 @@
             });
         }
 
-        // Funciones para Combustible
+        // Funciones para Combustible con sistema de pagos
+        async function setupFuelForm() {
+            const form = document.getElementById('fuelForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('fuelId').value;
+                    const litros = parseFloat(document.getElementById('litros').value) || 0;
+                    const fuel = {
+                        placa: document.getElementById('placaCombustible').value,
+                        fecha: document.getElementById('fechaCombustible').value,
+                        litros: litros,
+                        costo: litros * 0.50,
+                        centro: document.getElementById('centroCombustible').value,
+                        estadoPago: document.getElementById('estadoPagoCombustible').value,
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('fuelRecords', fuel);
+                        if (firebaseId) {
+                            fuel.firebaseId = firebaseId;
+                        }
+                        fuelRecords.push(fuel);
+                    } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (fuelRecords[id].firebaseId) {
+                            await updateInFirebase('fuelRecords', fuelRecords[id].firebaseId, fuel);
+                        }
+                        fuelRecords[id] = fuel;
+                    }
+
+                    localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
+                    loadFuelData();
+                    this.reset();
+                    document.getElementById('fuelId').value = '';
+                    updateReports();
+                    updateTotalPendienteHeader();
+                    updateSyncStatus('success', 'Guardado en Firebase');
+                });
+
+                const litrosInput = document.getElementById('litros');
+                if (litrosInput) {
+                    litrosInput.addEventListener('input', function() {
+                        const litros = parseFloat(this.value) || 0;
+                        document.getElementById('costoCombustible').value = (litros * 0.50).toFixed(2);
+                    });
+                }
+            }
+
+            // Configurar botón de filtro para combustible
+            const toggleBtn = document.getElementById('togglePendientesCombustible');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    mostrarSoloPendientes.combustible = !mostrarSoloPendientes.combustible;
+                    this.textContent = mostrarSoloPendientes.combustible ? 
+                        'Mostrar Todos' : 'Mostrar Solo Pendientes';
+                    this.classList.toggle('bg-yellow-500', !mostrarSoloPendientes.combustible);
+                    this.classList.toggle('bg-gray-500', mostrarSoloPendientes.combustible);
+                    loadFuelData();
+                });
+            }
+        }
+
         function loadFuelData() {
             const tbody = document.getElementById('fuelTableBody');
             if (!tbody) return;
             
             tbody.innerHTML = '';
-            fuelRecords.forEach((record, index) => {
+            
+            let fuelFiltrados = fuelRecords;
+            
+            // Aplicar filtro de pendientes si está activado
+            if (mostrarSoloPendientes.combustible) {
+                fuelFiltrados = fuelRecords.filter(f => f.estadoPago === 'pendiente');
+            }
+            
+            fuelFiltrados.forEach((record, index) => {
                 const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.className = `border-b border-gray-200 hover:bg-gray-100 ${record.estadoPago === 'pagado' ? 'estado-pagado' : 'estado-pendiente'}`;
+                
+                // Encontrar el índice real en el array original
+                const originalIndex = fuelRecords.findIndex(f => 
+                    f.placa === record.placa && 
+                    f.fecha === record.fecha && 
+                    f.litros === record.litros
+                );
+                
+                const estadoPagoBadge = record.estadoPago === 'pagado' ? 
+                    '<span class="badge-pagado">PAGADO</span>' : 
+                    '<span class="badge-pendiente">PENDIENTE</span>';
+                
                 row.innerHTML = `
                     <td class="py-3 px-6 text-left whitespace-nowrap">${record.placa}</td>
                     <td class="py-3 px-6 text-left">${record.fecha}</td>
                     <td class="py-3 px-6 text-left">${record.litros} L</td>
                     <td class="py-3 px-6 text-left">$${record.costo}</td>
                     <td class="py-3 px-6 text-left">${record.centro}</td>
+                    <td class="py-3 px-6 text-left">${estadoPagoBadge}</td>
                     <td class="py-3 px-6 text-center">
-                        <button onclick="editFuel(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
-                        <button onclick="deleteFuel(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                        <button onclick="editFuel(${originalIndex})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="toggleEstadoPagoCombustible(${originalIndex})" class="bg-${record.estadoPago === 'pagado' ? 'yellow' : 'green'}-500 text-white px-3 py-1 rounded hover:bg-${record.estadoPago === 'pagado' ? 'yellow' : 'green'}-600 transition duration-300 ml-2">
+                            ${record.estadoPago === 'pagado' ? 'Marcar Pendiente' : 'Marcar Pagado'}
+                        </button>
+                        <button onclick="deleteFuel(${originalIndex})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
+
+        // Función para alternar estado de pago de combustible
+        window.toggleEstadoPagoCombustible = async function(index) {
+            if (index < 0 || index >= fuelRecords.length) return;
+            
+            const nuevoEstado = fuelRecords[index].estadoPago === 'pagado' ? 'pendiente' : 'pagado';
+            const confirmacion = confirm(`¿Desea cambiar el estado de pago a "${nuevoEstado.toUpperCase()}"?`);
+            
+            if (confirmacion) {
+                // Actualizar en Firebase si tiene ID
+                if (fuelRecords[index].firebaseId) {
+                    await updateInFirebase('fuelRecords', fuelRecords[index].firebaseId, {
+                        ...fuelRecords[index],
+                        estadoPago: nuevoEstado,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+                
+                fuelRecords[index].estadoPago = nuevoEstado;
+                localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
+                loadFuelData();
+                updateReports();
+                updateTotalPendienteHeader();
+                updateSyncStatus('success', 'Estado de pago actualizado');
+            }
+        };
 
         // Funciones para Siniestros
         function loadSiniestroData() {
@@ -1407,38 +1717,237 @@
             });
         }
 
-        // Funciones para Lavados
+        // Funciones para Lavados con sistema de pagos
+        async function setupLavadoForm() {
+            const form = document.getElementById('lavadoForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('lavadoId').value;
+                    const lavado = {
+                        placa: document.getElementById('placaLavado').value,
+                        fecha: document.getElementById('fechaLavado').value,
+                        costo: document.getElementById('costoLavado').value,
+                        centro: document.getElementById('centroLavado').value,
+                        estadoPago: document.getElementById('estadoPagoLavado').value,
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('lavados', lavado);
+                        if (firebaseId) {
+                            lavado.firebaseId = firebaseId;
+                        }
+                        lavados.push(lavado);
+                    } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (lavados[id].firebaseId) {
+                            await updateInFirebase('lavados', lavados[id].firebaseId, lavado);
+                        }
+                        lavados[id] = lavado;
+                    }
+
+                    localStorage.setItem('lavados', JSON.stringify(lavados));
+                    loadLavadoData();
+                    this.reset();
+                    document.getElementById('lavadoId').value = '';
+                    updateReports();
+                    updateTotalPendienteHeader();
+                    updateSyncStatus('success', 'Guardado en Firebase');
+                });
+            }
+
+            // Configurar botón de filtro para lavados
+            const toggleBtn = document.getElementById('togglePendientesLavado');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    mostrarSoloPendientes.lavados = !mostrarSoloPendientes.lavados;
+                    this.textContent = mostrarSoloPendientes.lavados ? 
+                        'Mostrar Todos' : 'Mostrar Solo Pendientes';
+                    this.classList.toggle('bg-yellow-500', !mostrarSoloPendientes.lavados);
+                    this.classList.toggle('bg-gray-500', mostrarSoloPendientes.lavados);
+                    loadLavadoData();
+                });
+            }
+        }
+
         function loadLavadoData() {
             const tbody = document.getElementById('lavadoTableBody');
             if (!tbody) return;
             
             tbody.innerHTML = '';
-            lavados.forEach((lavado, index) => {
+            
+            let lavadosFiltrados = lavados;
+            
+            // Aplicar filtro de pendientes si está activado
+            if (mostrarSoloPendientes.lavados) {
+                lavadosFiltrados = lavados.filter(l => l.estadoPago === 'pendiente');
+            }
+            
+            lavadosFiltrados.forEach((lavado, index) => {
                 const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.className = `border-b border-gray-200 hover:bg-gray-100 ${lavado.estadoPago === 'pagado' ? 'estado-pagado' : 'estado-pendiente'}`;
+                
+                // Encontrar el índice real en el array original
+                const originalIndex = lavados.findIndex(l => 
+                    l.placa === lavado.placa && 
+                    l.fecha === lavado.fecha && 
+                    l.costo === lavado.costo
+                );
+                
+                const estadoPagoBadge = lavado.estadoPago === 'pagado' ? 
+                    '<span class="badge-pagado">PAGADO</span>' : 
+                    '<span class="badge-pendiente">PENDIENTE</span>';
+                
                 row.innerHTML = `
                     <td class="py-3 px-6 text-left whitespace-nowrap">${lavado.placa}</td>
                     <td class="py-3 px-6 text-left">${lavado.fecha}</td>
                     <td class="py-3 px-6 text-left">$${lavado.costo}</td>
                     <td class="py-3 px-6 text-left">${lavado.centro}</td>
+                    <td class="py-3 px-6 text-left">${estadoPagoBadge}</td>
                     <td class="py-3 px-6 text-center">
-                        <button onclick="editLavado(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
-                        <button onclick="deleteLavado(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                        <button onclick="editLavado(${originalIndex})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="toggleEstadoPagoLavado(${originalIndex})" class="bg-${lavado.estadoPago === 'pagado' ? 'yellow' : 'green'}-500 text-white px-3 py-1 rounded hover:bg-${lavado.estadoPago === 'pagado' ? 'yellow' : 'green'}-600 transition duration-300 ml-2">
+                            ${lavado.estadoPago === 'pagado' ? 'Marcar Pendiente' : 'Marcar Pagado'}
+                        </button>
+                        <button onclick="deleteLavado(${originalIndex})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
-        // Funciones para Gasoil
+        // Función para alternar estado de pago de lavados
+        window.toggleEstadoPagoLavado = async function(index) {
+            if (index < 0 || index >= lavados.length) return;
+            
+            const nuevoEstado = lavados[index].estadoPago === 'pagado' ? 'pendiente' : 'pagado';
+            const confirmacion = confirm(`¿Desea cambiar el estado de pago a "${nuevoEstado.toUpperCase()}"?`);
+            
+            if (confirmacion) {
+                // Actualizar en Firebase si tiene ID
+                if (lavados[index].firebaseId) {
+                    await updateInFirebase('lavados', lavados[index].firebaseId, {
+                        ...lavados[index],
+                        estadoPago: nuevoEstado,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+                
+                lavados[index].estadoPago = nuevoEstado;
+                localStorage.setItem('lavados', JSON.stringify(lavados));
+                loadLavadoData();
+                updateReports();
+                updateTotalPendienteHeader();
+                updateSyncStatus('success', 'Estado de pago actualizado');
+            }
+        };
+
+        // Funciones para Gasoil con sistema de pagos
+        async function setupGasoilForm() {
+            const form = document.getElementById('gasoilForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('gasoilId').value;
+                    const litros = parseFloat(document.getElementById('litrosGasoil').value) || 0;
+                    const flete = parseFloat(document.getElementById('fleteGasoil').value) || 0;
+                    const gasoil = {
+                        placa: document.getElementById('placaGasoil').value,
+                        fecha: document.getElementById('fechaGasoil').value,
+                        litros: litros,
+                        flete: flete,
+                        costo: (litros * 0.48) + flete,
+                        centro: document.getElementById('centroGasoil').value,
+                        estadoPago: document.getElementById('estadoPagoGasoil').value,
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    if (id === '') {
+                        // NUEVO: Guardar en Firebase
+                        const firebaseId = await saveToFirebase('gasoilRecords', gasoil);
+                        if (firebaseId) {
+                            gasoil.firebaseId = firebaseId;
+                        }
+                        gasoilRecords.push(gasoil);
+                    } else {
+                        // EDITAR: Actualizar en Firebase si tiene ID
+                        if (gasoilRecords[id].firebaseId) {
+                            await updateInFirebase('gasoilRecords', gasoilRecords[id].firebaseId, gasoil);
+                        }
+                        gasoilRecords[id] = gasoil;
+                    }
+
+                    localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
+                    loadGasoilData();
+                    this.reset();
+                    document.getElementById('gasoilId').value = '';
+                    updateReports();
+                    updateTotalPendienteHeader();
+                    updateSyncStatus('success', 'Guardado en Firebase');
+                });
+
+                const litrosInput = document.getElementById('litrosGasoil');
+                const fleteInput = document.getElementById('fleteGasoil');
+                
+                function calcularCostoGasoil() {
+                    const litros = parseFloat(litrosInput.value) || 0;
+                    const flete = parseFloat(fleteInput.value) || 0;
+                    const costoTotal = (litros * 0.48) + flete;
+                    document.getElementById('costoGasoil').value = costoTotal.toFixed(2);
+                }
+
+                if (litrosInput) {
+                    litrosInput.addEventListener('input', calcularCostoGasoil);
+                }
+                if (fleteInput) {
+                    fleteInput.addEventListener('input', calcularCostoGasoil);
+                }
+            }
+
+            // Configurar botón de filtro para gasoil
+            const toggleBtn = document.getElementById('togglePendientesGasoil');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    mostrarSoloPendientes.gasoil = !mostrarSoloPendientes.gasoil;
+                    this.textContent = mostrarSoloPendientes.gasoil ? 
+                        'Mostrar Todos' : 'Mostrar Solo Pendientes';
+                    this.classList.toggle('bg-yellow-500', !mostrarSoloPendientes.gasoil);
+                    this.classList.toggle('bg-gray-500', mostrarSoloPendientes.gasoil);
+                    loadGasoilData();
+                });
+            }
+        }
+
         function loadGasoilData() {
             const tbody = document.getElementById('gasoilTableBody');
             if (!tbody) return;
             
             tbody.innerHTML = '';
-            gasoilRecords.forEach((record, index) => {
+            
+            let gasoilFiltrados = gasoilRecords;
+            
+            // Aplicar filtro de pendientes si está activado
+            if (mostrarSoloPendientes.gasoil) {
+                gasoilFiltrados = gasoilRecords.filter(g => g.estadoPago === 'pendiente');
+            }
+            
+            gasoilFiltrados.forEach((record, index) => {
                 const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.className = `border-b border-gray-200 hover:bg-gray-100 ${record.estadoPago === 'pagado' ? 'estado-pagado' : 'estado-pendiente'}`;
+                
+                // Encontrar el índice real en el array original
+                const originalIndex = gasoilRecords.findIndex(g => 
+                    g.placa === record.placa && 
+                    g.fecha === record.fecha && 
+                    g.litros === record.litros
+                );
+                
+                const estadoPagoBadge = record.estadoPago === 'pagado' ? 
+                    '<span class="badge-pagado">PAGADO</span>' : 
+                    '<span class="badge-pendiente">PENDIENTE</span>';
+                
                 row.innerHTML = `
                     <td class="py-3 px-6 text-left whitespace-nowrap">${record.placa}</td>
                     <td class="py-3 px-6 text-left">${record.fecha}</td>
@@ -1446,14 +1955,44 @@
                     <td class="py-3 px-6 text-left">$${record.flete}</td>
                     <td class="py-3 px-6 text-left">$${record.costo}</td>
                     <td class="py-3 px-6 text-left">${record.centro}</td>
+                    <td class="py-3 px-6 text-left">${estadoPagoBadge}</td>
                     <td class="py-3 px-6 text-center">
-                        <button onclick="editGasoil(${index})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
-                        <button onclick="deleteGasoil(${index})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
+                        <button onclick="editGasoil(${originalIndex})" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-300">Editar</button>
+                        <button onclick="toggleEstadoPagoGasoil(${originalIndex})" class="bg-${record.estadoPago === 'pagado' ? 'yellow' : 'green'}-500 text-white px-3 py-1 rounded hover:bg-${record.estadoPago === 'pagado' ? 'yellow' : 'green'}-600 transition duration-300 ml-2">
+                            ${record.estadoPago === 'pagado' ? 'Marcar Pendiente' : 'Marcar Pagado'}
+                        </button>
+                        <button onclick="deleteGasoil(${originalIndex})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-300 ml-2">Eliminar</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
+
+        // Función para alternar estado de pago de gasoil
+        window.toggleEstadoPagoGasoil = async function(index) {
+            if (index < 0 || index >= gasoilRecords.length) return;
+            
+            const nuevoEstado = gasoilRecords[index].estadoPago === 'pagado' ? 'pendiente' : 'pagado';
+            const confirmacion = confirm(`¿Desea cambiar el estado de pago a "${nuevoEstado.toUpperCase()}"?`);
+            
+            if (confirmacion) {
+                // Actualizar en Firebase si tiene ID
+                if (gasoilRecords[index].firebaseId) {
+                    await updateInFirebase('gasoilRecords', gasoilRecords[index].firebaseId, {
+                        ...gasoilRecords[index],
+                        estadoPago: nuevoEstado,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+                
+                gasoilRecords[index].estadoPago = nuevoEstado;
+                localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
+                loadGasoilData();
+                updateReports();
+                updateTotalPendienteHeader();
+                updateSyncStatus('success', 'Estado de pago actualizado');
+            }
+        };
 
         // FUNCIONES DE EDICIÓN Y ELIMINACIÓN PARA TODAS LAS PESTAÑAS
 
@@ -1481,6 +2020,7 @@
             document.getElementById('costoMantenimiento').value = maintenance.costo;
             document.getElementById('proveedorTaller').value = maintenance.proveedor;
             document.getElementById('centroMantenimiento').value = maintenance.centro;
+            document.getElementById('estadoPagoMantenimiento').value = maintenance.estadoPago || 'pendiente';
 
             document.getElementById('tipoMantenimiento').dispatchEvent(new Event('change'));
             
@@ -1509,11 +2049,16 @@
             });
         };
 
-        window.deleteInspection = function(index) {
+        window.deleteInspection = async function(index) {
             if (confirm('¿Está seguro de que desea eliminar esta inspección?')) {
+                // Eliminar de Firebase si tiene ID
+                if (inspections[index].firebaseId) {
+                    await deleteFromFirebase('inspections', inspections[index].firebaseId);
+                }
                 inspections.splice(index, 1);
                 localStorage.setItem('inspections', JSON.stringify(inspections));
                 loadInspectionData();
+                updateSyncStatus('success', 'Inspección eliminada');
             }
         };
 
@@ -1526,6 +2071,7 @@
             document.getElementById('litros').value = record.litros;
             document.getElementById('costoCombustible').value = record.costo;
             document.getElementById('centroCombustible').value = record.centro;
+            document.getElementById('estadoPagoCombustible').value = record.estadoPago || 'pendiente';
         };
 
         window.deleteFuel = async function(index) {
@@ -1538,6 +2084,7 @@
                 localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
                 loadFuelData();
                 updateReports();
+                updateTotalPendienteHeader();
                 updateSyncStatus('success', 'Combustible eliminado');
             }
         };
@@ -1578,6 +2125,7 @@
             document.getElementById('fechaLavado').value = lavado.fecha;
             document.getElementById('costoLavado').value = lavado.costo;
             document.getElementById('centroLavado').value = lavado.centro;
+            document.getElementById('estadoPagoLavado').value = lavado.estadoPago || 'pendiente';
         };
 
         window.deleteLavado = async function(index) {
@@ -1590,6 +2138,7 @@
                 localStorage.setItem('lavados', JSON.stringify(lavados));
                 loadLavadoData();
                 updateReports();
+                updateTotalPendienteHeader();
                 updateSyncStatus('success', 'Lavado eliminado');
             }
         };
@@ -1604,6 +2153,7 @@
             document.getElementById('fleteGasoil').value = record.flete;
             document.getElementById('costoGasoil').value = record.costo;
             document.getElementById('centroGasoil').value = record.centro;
+            document.getElementById('estadoPagoGasoil').value = record.estadoPago || 'pendiente';
         };
 
         window.deleteGasoil = async function(index) {
@@ -1616,6 +2166,7 @@
                 localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
                 loadGasoilData();
                 updateReports();
+                updateTotalPendienteHeader();
                 updateSyncStatus('success', 'Gasoil eliminado');
             }
         };
@@ -1750,6 +2301,7 @@
                 costo: parseFloat(row.Costo || row.costo || '0'),
                 proveedor: String(row.Proveedor || row.proveedor || row.Taller || '').trim(),
                 centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim(),
+                estadoPago: String(row['Estado de Pago'] || row.estadoPago || 'pendiente').trim(),
                 kilometraje: row.Kilometraje || row.kilometraje || '',
                 descripcion: String(row.Descripción || row.descripcion || '').trim(),
                 causa: String(row.Causa || row.causa || '').trim()
@@ -1792,7 +2344,8 @@
                 fecha: String(row.Fecha || row.fecha || '').trim(),
                 litros: litros,
                 costo: litros * 0.50,
-                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim(),
+                estadoPago: String(row['Estado de Pago'] || row.estadoPago || 'pendiente').trim()
             };
             
             if (!item.placa) throw new Error('La placa es requerida');
@@ -1824,7 +2377,8 @@
                 placa: String(row.Placa || row.placa || '').toUpperCase().trim(),
                 fecha: String(row.Fecha || row.fecha || '').trim(),
                 costo: parseFloat(row.Costo || row.costo || '0'),
-                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim(),
+                estadoPago: String(row['Estado de Pago'] || row.estadoPago || 'pendiente').trim()
             };
             
             if (!item.placa) throw new Error('La placa es requerida');
@@ -1842,7 +2396,8 @@
                 litros: litros,
                 flete: flete,
                 costo: (litros * 0.48) + flete,
-                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim()
+                centro: String(row.Centro || row.centro || row['Centro de Operaciones'] || '').trim(),
+                estadoPago: String(row['Estado de Pago'] || row.estadoPago || 'pendiente').trim()
             };
             
             if (!item.placa) throw new Error('La placa es requerida');
@@ -1898,6 +2453,7 @@
                     break;
             }
             updateReports();
+            updateTotalPendienteHeader();
             updateSyncStatus('success', 'Importación completada');
         }
 
@@ -1974,55 +2530,6 @@
             }
         }
 
-        function setupFuelForm() {
-            const form = document.getElementById('fuelForm');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const id = document.getElementById('fuelId').value;
-                    const litros = parseFloat(document.getElementById('litros').value) || 0;
-                    const fuel = {
-                        placa: document.getElementById('placaCombustible').value,
-                        fecha: document.getElementById('fechaCombustible').value,
-                        litros: litros,
-                        costo: litros * 0.50,
-                        centro: document.getElementById('centroCombustible').value,
-                        lastUpdated: new Date().toISOString()
-                    };
-
-                    if (id === '') {
-                        // NUEVO: Guardar en Firebase
-                        const firebaseId = await saveToFirebase('fuelRecords', fuel);
-                        if (firebaseId) {
-                            fuel.firebaseId = firebaseId;
-                        }
-                        fuelRecords.push(fuel);
-                    } else {
-                        // EDITAR: Actualizar en Firebase si tiene ID
-                        if (fuelRecords[id].firebaseId) {
-                            await updateInFirebase('fuelRecords', fuelRecords[id].firebaseId, fuel);
-                        }
-                        fuelRecords[id] = fuel;
-                    }
-
-                    localStorage.setItem('fuelRecords', JSON.stringify(fuelRecords));
-                    loadFuelData();
-                    this.reset();
-                    document.getElementById('fuelId').value = '';
-                    updateReports();
-                    updateSyncStatus('success', 'Guardado en Firebase');
-                });
-
-                const litrosInput = document.getElementById('litros');
-                if (litrosInput) {
-                    litrosInput.addEventListener('input', function() {
-                        const litros = parseFloat(this.value) || 0;
-                        document.getElementById('costoCombustible').value = (litros * 0.50).toFixed(2);
-                    });
-                }
-            }
-        }
-
         function setupSiniestroForm() {
             const form = document.getElementById('siniestroForm');
             if (form) {
@@ -2066,105 +2573,6 @@
             }
         }
 
-        function setupLavadoForm() {
-            const form = document.getElementById('lavadoForm');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const id = document.getElementById('lavadoId').value;
-                    const lavado = {
-                        placa: document.getElementById('placaLavado').value,
-                        fecha: document.getElementById('fechaLavado').value,
-                        costo: document.getElementById('costoLavado').value,
-                        centro: document.getElementById('centroLavado').value,
-                        lastUpdated: new Date().toISOString()
-                    };
-
-                    if (id === '') {
-                        // NUEVO: Guardar en Firebase
-                        const firebaseId = await saveToFirebase('lavados', lavado);
-                        if (firebaseId) {
-                            lavado.firebaseId = firebaseId;
-                        }
-                        lavados.push(lavado);
-                    } else {
-                        // EDITAR: Actualizar en Firebase si tiene ID
-                        if (lavados[id].firebaseId) {
-                            await updateInFirebase('lavados', lavados[id].firebaseId, lavado);
-                        }
-                        lavados[id] = lavado;
-                    }
-
-                    localStorage.setItem('lavados', JSON.stringify(lavados));
-                    loadLavadoData();
-                    this.reset();
-                    document.getElementById('lavadoId').value = '';
-                    updateReports();
-                    updateSyncStatus('success', 'Guardado en Firebase');
-                });
-            }
-        }
-
-        function setupGasoilForm() {
-            const form = document.getElementById('gasoilForm');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const id = document.getElementById('gasoilId').value;
-                    const litros = parseFloat(document.getElementById('litrosGasoil').value) || 0;
-                    const flete = parseFloat(document.getElementById('fleteGasoil').value) || 0;
-                    const gasoil = {
-                        placa: document.getElementById('placaGasoil').value,
-                        fecha: document.getElementById('fechaGasoil').value,
-                        litros: litros,
-                        flete: flete,
-                        costo: (litros * 0.48) + flete,
-                        centro: document.getElementById('centroGasoil').value,
-                        lastUpdated: new Date().toISOString()
-                    };
-
-                    if (id === '') {
-                        // NUEVO: Guardar en Firebase
-                        const firebaseId = await saveToFirebase('gasoilRecords', gasoil);
-                        if (firebaseId) {
-                            gasoil.firebaseId = firebaseId;
-                        }
-                        gasoilRecords.push(gasoil);
-                    } else {
-                        // EDITAR: Actualizar en Firebase si tiene ID
-                        if (gasoilRecords[id].firebaseId) {
-                            await updateInFirebase('gasoilRecords', gasoilRecords[id].firebaseId, gasoil);
-                        }
-                        gasoilRecords[id] = gasoil;
-                    }
-
-                    localStorage.setItem('gasoilRecords', JSON.stringify(gasoilRecords));
-                    loadGasoilData();
-                    this.reset();
-                    document.getElementById('gasoilId').value = '';
-                    updateReports();
-                    updateSyncStatus('success', 'Guardado en Firebase');
-                });
-
-                const litrosInput = document.getElementById('litrosGasoil');
-                const fleteInput = document.getElementById('fleteGasoil');
-                
-                function calcularCostoGasoil() {
-                    const litros = parseFloat(litrosInput.value) || 0;
-                    const flete = parseFloat(fleteInput.value) || 0;
-                    const costoTotal = (litros * 0.48) + flete;
-                    document.getElementById('costoGasoil').value = costoTotal.toFixed(2);
-                }
-
-                if (litrosInput) {
-                    litrosInput.addEventListener('input', calcularCostoGasoil);
-                }
-                if (fleteInput) {
-                    fleteInput.addEventListener('input', calcularCostoGasoil);
-                }
-            }
-        }
-
         function setupSearchFunctionality() {
             setupSearchInput('searchVehicleInput', 'vehicleTableBody');
             setupSearchInput('searchMaintenanceInput', 'maintenanceTableBody');
@@ -2192,7 +2600,8 @@
             }
         }
 
-        // CORRECCIÓN: Funciones para Reportes - Gráficos corregidos
+        // ==================== FUNCIONES PARA REPORTES CON SISTEMA DE PAGOS ====================
+
         function updateReports() {
             const year = document.getElementById('reportYear')?.value || new Date().getFullYear();
             const month = document.getElementById('reportMonth')?.value || 'all';
@@ -2205,29 +2614,18 @@
             updateFuelConsumptionTables(year);
             updateAnnualComparison(year);
             updateOriginalCounters();
+            updatePaymentSummary();
         }
 
         function updateSummaryCards(year, month, center) {
-            const msoTotal = calculateTotalExpenses('MSO', year, month);
-            const unccsTotal = calculateTotalExpenses('UN CCS', year, month);
+            const msoTotal = calculateTotalExpenses('MSO', year, month, mostrarSoloPendientesReporte);
+            const unccsTotal = calculateTotalExpenses('UN CCS', year, month, mostrarSoloPendientesReporte);
             
             document.getElementById('totalMSO').textContent = `$${msoTotal.toFixed(2)}`;
             document.getElementById('totalUNCCS').textContent = `$${unccsTotal.toFixed(2)}`;
             
-            if (msoTotal > unccsTotal) {
-                document.getElementById('highestSpender').textContent = 'MSO';
-                document.getElementById('highestAmount').textContent = `$${msoTotal.toFixed(2)}`;
-                document.getElementById('lowestSpender').textContent = 'UN CCS';
-                document.getElementById('lowestAmount').textContent = `$${unccsTotal.toFixed(2)}`;
-            } else {
-                document.getElementById('highestSpender').textContent = 'UN CCS';
-                document.getElementById('highestAmount').textContent = `$${unccsTotal.toFixed(2)}`;
-                document.getElementById('lowestSpender').textContent = 'MSO';
-                document.getElementById('lowestAmount').textContent = `$${msoTotal.toFixed(2)}`;
-            }
-            
-            const prevYearMSO = calculateTotalExpenses('MSO', parseInt(year)-1, month);
-            const prevYearUNCCS = calculateTotalExpenses('UN CCS', parseInt(year)-1, month);
+            const prevYearMSO = calculateTotalExpenses('MSO', parseInt(year)-1, month, mostrarSoloPendientesReporte);
+            const prevYearUNCCS = calculateTotalExpenses('UN CCS', parseInt(year)-1, month, mostrarSoloPendientesReporte);
             
             const msoTrend = msoTotal - prevYearMSO;
             const unccsTrend = unccsTotal - prevYearUNCCS;
@@ -2241,40 +2639,124 @@
             document.getElementById('unccsTrend').className = `text-sm mt-1 ${unccsTrend >= 0 ? 'text-red-600' : 'text-green-600'}`;
         }
 
-        function calculateTotalExpenses(center, year, month = 'all') {
+        function calculateTotalExpenses(center, year, month = 'all', soloPendientes = false) {
             let total = 0;
             
+            // Mantenimientos - EXCLUIR PAGADOS si soloPendientes es true
             total += maintenances
                 .filter(m => m.centro === center && 
+                    (!soloPendientes || m.estadoPago !== 'pagado') &&
                     (month === 'all' || new Date(m.fecha).getMonth() + 1 == month) &&
                     new Date(m.fecha).getFullYear() == year)
                 .reduce((sum, m) => sum + parseFloat(m.costo || 0), 0);
             
+            // Combustible - EXCLUIR PAGADOS si soloPendientes es true
             total += fuelRecords
                 .filter(f => f.centro === center && 
+                    (!soloPendientes || f.estadoPago !== 'pagado') &&
                     (month === 'all' || new Date(f.fecha).getMonth() + 1 == month) &&
                     new Date(f.fecha).getFullYear() == year)
                 .reduce((sum, f) => sum + parseFloat(f.costo || 0), 0);
             
+            // Siniestros (no tienen sistema de pagos, siempre se incluyen)
             total += siniestros
                 .filter(s => s.centro === center && 
                     (month === 'all' || new Date(s.fechaHora).getMonth() + 1 == month) &&
                     new Date(s.fechaHora).getFullYear() == year)
                 .reduce((sum, s) => sum + parseFloat(s.costoReparacion || 0), 0);
             
+            // Lavados - EXCLUIR PAGADOS si soloPendientes es true
             total += lavados
                 .filter(l => l.centro === center && 
+                    (!soloPendientes || l.estadoPago !== 'pagado') &&
                     (month === 'all' || new Date(l.fecha).getMonth() + 1 == month) &&
                     new Date(l.fecha).getFullYear() == year)
                 .reduce((sum, l) => sum + parseFloat(l.costo || 0), 0);
             
+            // Gasoil - EXCLUIR PAGADOS si soloPendientes es true
             total += gasoilRecords
                 .filter(g => g.centro === center && 
+                    (!soloPendientes || g.estadoPago !== 'pagado') &&
                     (month === 'all' || new Date(g.fecha).getMonth() + 1 == month) &&
                     new Date(g.fecha).getFullYear() == year)
                 .reduce((sum, g) => sum + parseFloat(g.costo || 0), 0);
             
             return total;
+        }
+
+        // Función para calcular total pendiente
+        function calcularTotalPendiente() {
+            let totalPendiente = 0;
+            
+            totalPendiente += maintenances
+                .filter(m => m.estadoPago === 'pendiente')
+                .reduce((sum, m) => sum + parseFloat(m.costo || 0), 0);
+            
+            totalPendiente += fuelRecords
+                .filter(f => f.estadoPago === 'pendiente')
+                .reduce((sum, f) => sum + parseFloat(f.costo || 0), 0);
+            
+            totalPendiente += lavados
+                .filter(l => l.estadoPago === 'pendiente')
+                .reduce((sum, l) => sum + parseFloat(l.costo || 0), 0);
+            
+            totalPendiente += gasoilRecords
+                .filter(g => g.estadoPago === 'pendiente')
+                .reduce((sum, g) => sum + parseFloat(g.costo || 0), 0);
+            
+            return totalPendiente;
+        }
+
+        // Función para calcular total pagado
+        function calcularTotalPagado() {
+            let totalPagado = 0;
+            
+            totalPagado += maintenances
+                .filter(m => m.estadoPago === 'pagado')
+                .reduce((sum, m) => sum + parseFloat(m.costo || 0), 0);
+            
+            totalPagado += fuelRecords
+                .filter(f => f.estadoPago === 'pagado')
+                .reduce((sum, f) => sum + parseFloat(f.costo || 0), 0);
+            
+            totalPagado += lavados
+                .filter(l => l.estadoPago === 'pagado')
+                .reduce((sum, l) => sum + parseFloat(l.costo || 0), 0);
+            
+            totalPagado += gasoilRecords
+                .filter(g => g.estadoPago === 'pagado')
+                .reduce((sum, g) => sum + parseFloat(g.costo || 0), 0);
+            
+            return totalPagado;
+        }
+
+        // Actualizar resumen de pagos en el header
+        function updateTotalPendienteHeader() {
+            const totalPendiente = calcularTotalPendiente();
+            const badge = document.getElementById('totalPendienteBadge');
+            
+            if (badge) {
+                if (totalPendiente > 0) {
+                    badge.textContent = `Pendiente: $${totalPendiente.toFixed(2)}`;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        // Actualizar resumen de pagos en reportes
+        function updatePaymentSummary() {
+            const totalPendiente = calcularTotalPendiente();
+            const totalPagado = calcularTotalPagado();
+            const totalGeneral = totalPendiente + totalPagado;
+            
+            document.getElementById('totalPendiente').textContent = `$${totalPendiente.toFixed(2)}`;
+            document.getElementById('totalPagado').textContent = `$${totalPagado.toFixed(2)}`;
+            
+            const porcentajePagado = totalGeneral > 0 ? (totalPagado / totalGeneral * 100).toFixed(1) : '0.0';
+            document.getElementById('pendienteInfo').textContent = `${porcentajePagado}% del total`;
+            document.getElementById('pagadoInfo').textContent = `${(100 - parseFloat(porcentajePagado)).toFixed(1)}% del total`;
         }
 
         // CORRECCIÓN: Función para gráfico de comparación mensual
@@ -2287,8 +2769,8 @@
             const unccsData = [];
             
             for (let month = 1; month <= 12; month++) {
-                msoData.push(calculateTotalExpenses('MSO', year, month));
-                unccsData.push(calculateTotalExpenses('UN CCS', year, month));
+                msoData.push(calculateTotalExpenses('MSO', year, month, mostrarSoloPendientesReporte));
+                unccsData.push(calculateTotalExpenses('UN CCS', year, month, mostrarSoloPendientesReporte));
             }
             
             // CORRECCIÓN: Verificar si el gráfico existe antes de destruirlo
@@ -2325,7 +2807,7 @@
                         },
                         title: {
                             display: true,
-                            text: `Comparativa Mensual ${year}`
+                            text: `Comparativa Mensual ${year} ${mostrarSoloPendientesReporte ? '(Solo Pendientes)' : ''}`
                         }
                     },
                     scales: {
@@ -2352,19 +2834,19 @@
             
             if (center === 'all') {
                 data = [
-                    calculateCategoryExpenses('maintenances', year, 'all'),
-                    calculateCategoryExpenses('fuel', year, 'all'),
-                    calculateCategoryExpenses('siniestros', year, 'all'),
-                    calculateCategoryExpenses('lavados', year, 'all'),
-                    calculateCategoryExpenses('gasoil', year, 'all')
+                    calculateCategoryExpenses('maintenances', year, 'all', mostrarSoloPendientesReporte),
+                    calculateCategoryExpenses('fuel', year, 'all', mostrarSoloPendientesReporte),
+                    calculateCategoryExpenses('siniestros', year, 'all', false),
+                    calculateCategoryExpenses('lavados', year, 'all', mostrarSoloPendientesReporte),
+                    calculateCategoryExpenses('gasoil', year, 'all', mostrarSoloPendientesReporte)
                 ];
             } else {
                 data = [
-                    calculateCategoryExpenses('maintenances', year, center),
-                    calculateCategoryExpenses('fuel', year, center),
-                    calculateCategoryExpenses('siniestros', year, center),
-                    calculateCategoryExpenses('lavados', year, center),
-                    calculateCategoryExpenses('gasoil', year, center)
+                    calculateCategoryExpenses('maintenances', year, center, mostrarSoloPendientesReporte),
+                    calculateCategoryExpenses('fuel', year, center, mostrarSoloPendientesReporte),
+                    calculateCategoryExpenses('siniestros', year, center, false),
+                    calculateCategoryExpenses('lavados', year, center, mostrarSoloPendientesReporte),
+                    calculateCategoryExpenses('gasoil', year, center, mostrarSoloPendientesReporte)
                 ];
             }
             
@@ -2397,14 +2879,14 @@
                         },
                         title: {
                             display: true,
-                            text: `Distribución de Gastos ${year}`
+                            text: `Distribución de Gastos ${year} ${mostrarSoloPendientesReporte ? '(Solo Pendientes)' : ''}`
                         }
                     }
                 }
             });
         }
 
-        function calculateCategoryExpenses(category, year, center = 'all') {
+        function calculateCategoryExpenses(category, year, center = 'all', soloPendientes = false) {
             let total = 0;
             let records = [];
             
@@ -2428,6 +2910,7 @@
             
             const filteredRecords = records.filter(record => 
                 (center === 'all' || record.centro === center) &&
+                (!soloPendientes || category === 'siniestros' || record.estadoPago !== 'pagado') &&
                 new Date(record.fecha || record.fechaHora).getFullYear() == year
             );
             
@@ -2480,7 +2963,7 @@
             let grandTotal = 0;
             
             for (let month = 1; month <= 12; month++) {
-                const monthTotal = calculateTotalExpenses(center, year, month);
+                const monthTotal = calculateTotalExpenses(center, year, month, mostrarSoloPendientesReporte);
                 grandTotal += monthTotal;
                 totalHTML += `<td class="py-3 px-6 text-left text-inter-primary">$${monthTotal.toFixed(2)}</td>`;
             }
@@ -2495,12 +2978,14 @@
             
             total += maintenances
                 .filter(m => m.placa === placa && 
+                    (!mostrarSoloPendientesReporte || m.estadoPago !== 'pagado') &&
                     new Date(m.fecha).getMonth() + 1 == month &&
                     new Date(m.fecha).getFullYear() == year)
                 .reduce((sum, m) => sum + parseFloat(m.costo || 0), 0);
             
             total += fuelRecords
                 .filter(f => f.placa === placa && 
+                    (!mostrarSoloPendientesReporte || f.estadoPago !== 'pagado') &&
                     new Date(f.fecha).getMonth() + 1 == month &&
                     new Date(f.fecha).getFullYear() == year)
                 .reduce((sum, f) => sum + parseFloat(f.costo || 0), 0);
@@ -2513,12 +2998,14 @@
             
             total += lavados
                 .filter(l => l.placa === placa && 
+                    (!mostrarSoloPendientesReporte || l.estadoPago !== 'pagado') &&
                     new Date(l.fecha).getMonth() + 1 == month &&
                     new Date(l.fecha).getFullYear() == year)
                 .reduce((sum, l) => sum + parseFloat(l.costo || 0), 0);
             
             total += gasoilRecords
                 .filter(g => g.placa === placa && 
+                    (!mostrarSoloPendientesReporte || g.estadoPago !== 'pagado') &&
                     new Date(g.fecha).getMonth() + 1 == month &&
                     new Date(g.fecha).getFullYear() == year)
                 .reduce((sum, g) => sum + parseFloat(g.costo || 0), 0);
@@ -2586,6 +3073,7 @@
             
             fuelRecords
                 .filter(f => f.placa === placa && 
+                    (!mostrarSoloPendientesReporte || f.estadoPago !== 'pagado') &&
                     new Date(f.fecha).getMonth() + 1 == month &&
                     new Date(f.fecha).getFullYear() == year)
                 .forEach(f => {
@@ -2602,6 +3090,7 @@
             
             fuelRecords
                 .filter(f => f.centro === center && 
+                    (!mostrarSoloPendientesReporte || f.estadoPago !== 'pagado') &&
                     new Date(f.fecha).getMonth() + 1 == month &&
                     new Date(f.fecha).getFullYear() == year)
                 .forEach(f => {
@@ -2622,11 +3111,11 @@
             if (!element) return;
             
             const categories = {
-                'Mantenimientos': calculateCategoryExpenses('maintenances', year, center),
-                'Combustible': calculateCategoryExpenses('fuel', year, center),
-                'Siniestros': calculateCategoryExpenses('siniestros', year, center),
-                'Lavados': calculateCategoryExpenses('lavados', year, center),
-                'Gasoil': calculateCategoryExpenses('gasoil', year, center)
+                'Mantenimientos': calculateCategoryExpenses('maintenances', year, center, mostrarSoloPendientesReporte),
+                'Combustible': calculateCategoryExpenses('fuel', year, center, mostrarSoloPendientesReporte),
+                'Siniestros': calculateCategoryExpenses('siniestros', year, center, false),
+                'Lavados': calculateCategoryExpenses('lavados', year, center, mostrarSoloPendientesReporte),
+                'Gasoil': calculateCategoryExpenses('gasoil', year, center, mostrarSoloPendientesReporte)
             };
             
             let html = '';
@@ -2675,6 +3164,18 @@
                 applyFiltersBtn.addEventListener('click', updateReports);
             }
             
+            const mostrarSoloPendientesBtn = document.getElementById('mostrarSoloPendientesReporte');
+            if (mostrarSoloPendientesBtn) {
+                mostrarSoloPendientesBtn.addEventListener('click', function() {
+                    mostrarSoloPendientesReporte = !mostrarSoloPendientesReporte;
+                    this.textContent = mostrarSoloPendientesReporte ? 
+                        'Mostrar Todos' : 'Solo Pendientes de Pago';
+                    this.classList.toggle('bg-yellow-500', !mostrarSoloPendientesReporte);
+                    this.classList.toggle('bg-gray-500', mostrarSoloPendientesReporte);
+                    updateReports();
+                });
+            }
+            
             const filterSelects = ['reportYear', 'reportMonth', 'reportCenter'];
             filterSelects.forEach(selectId => {
                 const select = document.getElementById(selectId);
@@ -2718,7 +3219,7 @@
                 case 'maintenances':
                     data = maintenances;
                     fileName = 'mantenimientos.xlsx';
-                    headers = ['Placa', 'Tipo', 'Fecha', 'Costo', 'Proveedor/Taller', 'Centro de Operaciones', 'Descripción'];
+                    headers = ['Placa', 'Tipo', 'Fecha', 'Costo', 'Proveedor/Taller', 'Centro de Operaciones', 'Estado de Pago', 'Descripción'];
                     break;
                 case 'inspections':
                     data = inspections;
@@ -2728,7 +3229,7 @@
                 case 'fuel':
                     data = fuelRecords;
                     fileName = 'combustible.xlsx';
-                    headers = ['Placa', 'Fecha', 'Litros', 'Costo', 'Centro de Operaciones'];
+                    headers = ['Placa', 'Fecha', 'Litros', 'Costo', 'Centro de Operaciones', 'Estado de Pago'];
                     break;
                 case 'siniestros':
                     data = siniestros;
@@ -2738,12 +3239,12 @@
                 case 'lavados':
                     data = lavados;
                     fileName = 'lavados.xlsx';
-                    headers = ['Placa', 'Fecha', 'Costo', 'Centro de Operaciones'];
+                    headers = ['Placa', 'Fecha', 'Costo', 'Centro de Operaciones', 'Estado de Pago'];
                     break;
                 case 'gasoil':
                     data = gasoilRecords;
                     fileName = 'gasoil.xlsx';
-                    headers = ['Placa', 'Fecha', 'Litros', 'Flete', 'Costo Total', 'Centro de Operaciones'];
+                    headers = ['Placa', 'Fecha', 'Litros', 'Flete', 'Costo Total', 'Centro de Operaciones', 'Estado de Pago'];
                     break;
             }
 

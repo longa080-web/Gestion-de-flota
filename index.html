@@ -1304,10 +1304,24 @@
             }
         }
 
-        // ============ FUNCIONES DE UTILIDAD ============
+        // ============ FUNCIONES DE UTILIDAD (CORREGIDAS) ============
         function formatearFecha(fechaInput) {
             try {
                 if (!fechaInput) return 'N/A';
+                
+                // Si la fecha está en formato YYYY-MM-DD (de input type="date")
+                if (typeof fechaInput === 'string' && fechaInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    // Dividir la fecha en partes y crear la fecha en la zona horaria local
+                    const [year, month, day] = fechaInput.split('-').map(Number);
+                    const fecha = new Date(year, month - 1, day);
+                    return fecha.toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                }
+                
+                // Para otros formatos (ej. objetos Date, strings con hora)
                 var fecha = new Date(fechaInput);
                 return fecha.toLocaleDateString('es-ES', {
                     day: '2-digit',
@@ -1321,6 +1335,23 @@
 
         function formatearFechaHora(fecha) {
             try {
+                if (!fecha) return 'N/A';
+                
+                // Si es un string de datetime-local (YYYY-MM-DDTHH:MM)
+                if (typeof fecha === 'string' && fecha.includes('T')) {
+                    const [datePart, timePart] = fecha.split('T');
+                    const [year, month, day] = datePart.split('-').map(Number);
+                    const [hour, minute] = timePart.split(':').map(Number);
+                    const fechaObj = new Date(year, month - 1, day, hour, minute);
+                    return fechaObj.toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+                
                 var date = new Date(fecha);
                 return date.toLocaleDateString('es-ES', {
                     day: '2-digit',

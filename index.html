@@ -124,7 +124,7 @@
             </div>
             
             <div class="mt-6 text-xs text-center text-gray-500">
-                <p>Admin: Admin1234</p>
+                <!-- Solo se muestra la credencial de chofer por seguridad -->
                 <p>Chofer: Inter1234</p>
             </div>
         </div>
@@ -138,6 +138,8 @@
                 <div class="flex items-center space-x-4">
                     <span id="userRole" class="text-sm bg-blue-500 px-3 py-1 rounded"></span>
                     <span id="syncStatus" class="text-sm bg-green-500 px-2 py-1 rounded">Conectado</span>
+                    <!-- Badge de Total Pendiente (reintegrado) -->
+                    <span id="totalPendienteBadge" class="text-sm bg-yellow-500 text-white px-3 py-1 rounded hidden"></span>
                     <button id="syncButton" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
                         Sincronizar
                     </button>
@@ -458,7 +460,7 @@
                                 <textarea id="observacionesInspeccion" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-inter-primary focus:ring focus:ring-inter-primary focus:ring-opacity-50 p-2" placeholder="Ingrese cualquier novedad o comentario adicional"></textarea>
                             </div>
                             <div class="col-span-full">
-                                <button type="submit" class="bg-inter-primary text-white font-bold py-3 px-6 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300 text-lg w-full md:w-auto">
+                                <button type="submit" id="guardarInspeccionBtn" class="bg-inter-primary text-white font-bold py-3 px-6 rounded-md shadow hover:bg-inter-accent-light hover:text-inter-primary transition duration-300 text-lg w-full md:w-auto">
                                     ✅ Guardar Inspección
                                 </button>
                             </div>
@@ -1068,7 +1070,7 @@
             setupYearSelector();
             setupReporteAnioSelector();
             updateReports();
-            updateTotalPendienteHeader();
+            updateTotalPendienteHeader(); // <-- Actualiza el badge
             actualizarVistaPreviaReporte();
             
             // Sincronizar con Firebase (solo admin)
@@ -1277,7 +1279,7 @@
 
                 loadAllData();
                 updateReports();
-                updateTotalPendienteHeader();
+                updateTotalPendienteHeader(); // <-- Actualiza el badge
                 actualizarVistaPreviaReporte();
                 
                 updateSyncStatus('success', 'Sincronizado');
@@ -1357,7 +1359,7 @@
         function setupAllForms() {
             setupVehicleForm();
             setupMaintenanceForm();
-            setupInspectionForm();
+            setupInspectionForm(); // <-- Corregido para evitar múltiples envíos
             setupFuelForm();
             setupSiniestroForm();
             setupLavadoForm();
@@ -1696,6 +1698,7 @@
             }
         }
 
+        // ============ FUNCIÓN DE INSPECCIÓN CORREGIDA (Evita múltiples envíos) ============
         function setupInspectionForm() {
             var form = document.getElementById('inspectionForm');
             if (!form) return;
@@ -1703,41 +1706,65 @@
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                var id = document.getElementById('inspectionId').value;
-                
-                var chequeo = {};
-                var checkboxes = document.querySelectorAll('#inspectionForm input[type="checkbox"]');
-                for (var i = 0; i < checkboxes.length; i++) {
-                    var cb = checkboxes[i];
-                    chequeo[cb.name] = cb.checked ? 'ok' : 'no';
+                // Prevenir múltiples envíos
+                var submitButton = document.getElementById('guardarInspeccionBtn');
+                if (submitButton.disabled) {
+                    console.log('Envío bloqueado para evitar duplicado');
+                    return;
                 }
-
-                var inspection = {
-                    placa: document.getElementById('placaInspeccion').value.toUpperCase(),
-                    conductor: document.getElementById('conductorInspeccion').value,
-                    kilometraje: document.getElementById('kilometrajeInspeccion').value,
-                    fecha: document.getElementById('fechaInspeccion').value,
-                    chequeo: chequeo,
-                    observaciones: document.getElementById('observacionesInspeccion').value
-                };
-
-                if (id === '') {
-                    var firebaseId = await saveToFirebase('inspections', inspection);
-                    if (firebaseId) inspection.firebaseId = firebaseId;
-                    inspections.push(inspection);
-                } else {
-                    if (inspections[id] && inspections[id].firebaseId) {
-                        await updateInFirebase('inspections', inspections[id].firebaseId, inspection);
+                
+                // Deshabilitar el botón inmediatamente
+                submitButton.disabled = true;
+                var originalText = submitButton.innerHTML;
+                submitButton.innerHTML = '⏳ Guardando...';
+                
+                try {
+                    var id = document.getElementById('inspectionId').value;
+                    
+                    var chequeo = {};
+                    var checkboxes = document.querySelectorAll('#inspectionForm input[type="checkbox"]');
+                    for (var i = 0; i < checkboxes.length; i++) {
+                        var cb = checkboxes[i];
+                        chequeo[cb.name] = cb.checked ? 'ok' : 'no';
                     }
-                    inspections[id] = inspection;
-                }
 
-                localStorage.setItem('inspections', JSON.stringify(inspections));
-                loadInspectionData();
-                form.reset();
-                document.getElementById('inspectionId').value = '';
-                
-                alert('✅ Inspección guardada correctamente');
+                    var inspection = {
+                        placa: document.getElementById('placaInspeccion').value.toUpperCase(),
+                        conductor: document.getElementById('conductorInspeccion').value,
+                        kilometraje: document.getElementById('kilometrajeInspeccion').value,
+                        fecha: document.getElementById('fechaInspeccion').value,
+                        chequeo: chequeo,
+                        observaciones: document.getElementById('observacionesInspeccion').value
+                    };
+
+                    if (id === '') {
+                        var firebaseId = await saveToFirebase('inspections', inspection);
+                        if (firebaseId) inspection.firebaseId = firebaseId;
+                        inspections.push(inspection);
+                    } else {
+                        if (inspections[id] && inspections[id].firebaseId) {
+                            await updateInFirebase('inspections', inspections[id].firebaseId, inspection);
+                        }
+                        inspections[id] = inspection;
+                    }
+
+                    localStorage.setItem('inspections', JSON.stringify(inspections));
+                    loadInspectionData();
+                    form.reset();
+                    document.getElementById('inspectionId').value = '';
+                    
+                    alert('✅ Inspección guardada correctamente');
+                    
+                } catch (error) {
+                    console.error('Error guardando inspección:', error);
+                    alert('❌ Error al guardar la inspección');
+                } finally {
+                    // Reactivar el botón después de 2 segundos
+                    setTimeout(function() {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }, 2000);
+                }
             });
         }
 
@@ -1759,6 +1786,8 @@
         };
 
         window.deleteInspection = async function(index) {
+            // Nota: El botón de eliminar está oculto para el perfil 'chofer' en loadInspectionData()
+            // Si se desea que el chofer pueda eliminar, se debe cambiar la condición en loadInspectionData()
             if (currentUser && currentUser.role !== 'admin') return;
             if (confirm('¿Eliminar esta inspección?')) {
                 if (inspections[index] && inspections[index].firebaseId) {
@@ -1779,6 +1808,14 @@
             
             for (var i = 0; i < inspeccionesOrdenadas.length; i++) {
                 var insp = inspeccionesOrdenadas[i];
+                var originalIndex = -1;
+                for (var j = 0; j < inspections.length; j++) {
+                    if (inspections[j].placa === insp.placa && inspections[j].fecha === insp.fecha && inspections[j].conductor === insp.conductor) {
+                        originalIndex = j;
+                        break;
+                    }
+                }
+                
                 var checklistItems = '';
                 if (insp.chequeo) {
                     var items = [];
@@ -1796,6 +1833,7 @@
                 var editBtnClass = 'bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs';
                 var deleteBtnClass = 'bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-xs';
                 
+                // Ocultar botones para chofer (si se requiere que el chofer pueda eliminar, cambiar esta condición)
                 if (currentUser && currentUser.role !== 'admin') {
                     editBtnClass += ' hidden';
                     deleteBtnClass += ' hidden';
@@ -1810,8 +1848,8 @@
                     <td class="py-3 px-4 md:px-6 text-left text-xs">${insp.observaciones ? insp.observaciones.substring(0, 50) : 'N/A'}</td>
                     <td class="py-3 px-4 md:px-6 text-center">
                         <div class="flex flex-col md:flex-row md:space-x-1 space-y-1">
-                            <button onclick="editInspection(${i})" class="${editBtnClass}">Editar</button>
-                            <button onclick="deleteInspection(${i})" class="${deleteBtnClass}">Eliminar</button>
+                            <button onclick="editInspection(${originalIndex})" class="${editBtnClass}">Editar</button>
+                            <button onclick="deleteInspection(${originalIndex})" class="${deleteBtnClass}">Eliminar</button>
                         </div>
                     </td>
                 `;
@@ -2654,6 +2692,7 @@
             return total;
         }
 
+        // ============ FUNCIÓN PARA ACTUALIZAR EL BADGE DE TOTAL PENDIENTE ============
         function updateTotalPendienteHeader() {
             var total = calcularTotalPendiente();
             var badge = document.getElementById('totalPendienteBadge');

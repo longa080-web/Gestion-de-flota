@@ -138,7 +138,7 @@
                 <div class="flex items-center space-x-4">
                     <span id="userRole" class="text-sm bg-blue-500 px-3 py-1 rounded"></span>
                     <span id="syncStatus" class="text-sm bg-green-500 px-2 py-1 rounded">Conectado</span>
-                    <!-- Badge de Total Pendiente (reintegrado) -->
+                    <!-- Badge de Total Pendiente (visible solo para admin) -->
                     <span id="totalPendienteBadge" class="text-sm bg-yellow-500 text-white px-3 py-1 rounded hidden"></span>
                     <button id="syncButton" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
                         Sincronizar
@@ -1070,7 +1070,7 @@
             setupYearSelector();
             setupReporteAnioSelector();
             updateReports();
-            updateTotalPendienteHeader(); // <-- Actualiza el badge
+            updateTotalPendienteHeader(); // Actualiza el badge (solo será visible si el usuario es admin)
             actualizarVistaPreviaReporte();
             
             // Sincronizar con Firebase (solo admin)
@@ -1279,7 +1279,7 @@
 
                 loadAllData();
                 updateReports();
-                updateTotalPendienteHeader(); // <-- Actualiza el badge
+                updateTotalPendienteHeader(); // Actualiza el badge (solo será visible si el usuario es admin)
                 actualizarVistaPreviaReporte();
                 
                 updateSyncStatus('success', 'Sincronizado');
@@ -1359,7 +1359,7 @@
         function setupAllForms() {
             setupVehicleForm();
             setupMaintenanceForm();
-            setupInspectionForm(); // <-- Corregido para evitar múltiples envíos
+            setupInspectionForm(); // Corregido para evitar múltiples envíos
             setupFuelForm();
             setupSiniestroForm();
             setupLavadoForm();
@@ -1787,7 +1787,6 @@
 
         window.deleteInspection = async function(index) {
             // Nota: El botón de eliminar está oculto para el perfil 'chofer' en loadInspectionData()
-            // Si se desea que el chofer pueda eliminar, se debe cambiar la condición en loadInspectionData()
             if (currentUser && currentUser.role !== 'admin') return;
             if (confirm('¿Eliminar esta inspección?')) {
                 if (inspections[index] && inspections[index].firebaseId) {
@@ -1833,7 +1832,7 @@
                 var editBtnClass = 'bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs';
                 var deleteBtnClass = 'bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-xs';
                 
-                // Ocultar botones para chofer (si se requiere que el chofer pueda eliminar, cambiar esta condición)
+                // Ocultar botones para chofer (solo admin puede editar/eliminar)
                 if (currentUser && currentUser.role !== 'admin') {
                     editBtnClass += ' hidden';
                     deleteBtnClass += ' hidden';
@@ -2697,7 +2696,8 @@
             var total = calcularTotalPendiente();
             var badge = document.getElementById('totalPendienteBadge');
             if (badge) {
-                if (total > 0) {
+                // Solo mostrar el badge si el usuario es administrador
+                if (currentUser && currentUser.role === 'admin' && total > 0) {
                     badge.textContent = 'Pendiente: $' + total.toFixed(2);
                     badge.classList.remove('hidden');
                 } else {

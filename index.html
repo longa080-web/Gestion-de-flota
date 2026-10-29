@@ -25,7 +25,6 @@
         .bg-inter-primary { background-color: #005BAA; }
         .text-inter-primary { color: #005BAA; }
         
-        /* Estilos para login */
         #loginContainer {
             position: fixed;
             top: 0;
@@ -39,17 +38,9 @@
             z-index: 9999;
         }
         
-        /* Ocultar app por defecto */
-        #appContainer {
-            display: none;
-        }
+        #appContainer { display: none; }
+        #appContainer.visible { display: block; }
         
-        /* Cuando app está visible */
-        #appContainer.visible {
-            display: block;
-        }
-        
-        /* Responsive */
         .responsive-table {
             display: block;
             width: 100%;
@@ -72,22 +63,10 @@
             color: #005BAA;
         }
 
-        .form-grid {
-            display: grid;
-            gap: 1rem;
-        }
+        .form-grid { display: grid; gap: 1rem; }
         
-        @media (min-width: 768px) {
-            .form-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
-        @media (min-width: 1024px) {
-            .form-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+        @media (min-width: 768px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .form-grid { grid-template-columns: repeat(3, 1fr); } }
     </style>
 </head>
 <body>
@@ -124,7 +103,6 @@
             </div>
             
             <div class="mt-6 text-xs text-center text-gray-500">
-                <!-- Solo se muestra la credencial de chofer por seguridad -->
                 <p>Chofer: Inter1234</p>
             </div>
         </div>
@@ -138,7 +116,6 @@
                 <div class="flex items-center space-x-4">
                     <span id="userRole" class="text-sm bg-blue-500 px-3 py-1 rounded"></span>
                     <span id="syncStatus" class="text-sm bg-green-500 px-2 py-1 rounded">Conectado</span>
-                    <!-- Badge de Total Pendiente (visible solo para admin) -->
                     <span id="totalPendienteBadge" class="text-sm bg-yellow-500 text-white px-3 py-1 rounded hidden"></span>
                     <button id="syncButton" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
                         Sincronizar
@@ -152,7 +129,6 @@
 
         <main class="container mx-auto p-4 md:p-6">
             <div class="bg-white p-4 md:p-6 rounded-lg shadow-md mb-6">
-                <!-- Tabs -->
                 <div class="tabs-container flex border-b border-gray-200 overflow-x-auto" id="tabsContainer">
                     <button class="tab-link focus:outline-none p-3 md:p-4" data-tab-id="vehiculos">
                         <span class="font-medium text-sm md:text-lg border-b-2 border-transparent pb-2 md:pb-4">Vehículos</span>
@@ -543,6 +519,7 @@
                             </div>
                         </form>
 
+                        <!-- BOTONES Y PANEL DE EXPORTACIÓN -->
                         <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 space-y-2 md:space-y-0">
                             <div class="flex items-center">
                                 <input type="file" id="importFuelFile" accept=".xlsx, .xls, .csv" class="hidden">
@@ -560,6 +537,43 @@
                                 <button id="exportFuelBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-green-700 transition duration-300">
                                     Exportar
                                 </button>
+                                <button id="exportFuelPdfBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md shadow hover:bg-red-700 transition duration-300">
+                                    📄 Exportar PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PANEL DE FECHAS (OCULTO) -->
+                        <div id="panelExportFuelPdf" class="hidden" style="margin-top: 20px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #f9fafb;">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-inter-primary">📄 Exportar Combustible a PDF</h3>
+                                <button id="cerrarPanelFuelPdf" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Define el rango de fechas para filtrar lo que deseas exportar.</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                                    <input type="date" id="fuelPdfFechaDesde" class="w-full p-2 border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                                    <input type="date" id="fuelPdfFechaHasta" class="w-full p-2 border border-gray-300 rounded-md">
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2 mb-4">
+                                <input type="checkbox" id="fuelPdfSoloPendientes" class="rounded">
+                                <label class="text-sm text-gray-700">Solo registros pendientes</label>
+                            </div>
+                            
+                            <div id="fuelPdfResumen" class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded text-sm text-blue-800 mb-4">
+                                <span id="fuelPdfResumenTexto">Calculando...</span>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                <button id="fuelPdfLimpiarFechas" class="flex-1 bg-gray-500 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600">Limpiar Fechas</button>
+                                <button id="fuelPdfConfirmar" class="flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">⬇️ Generar PDF</button>
                             </div>
                         </div>
 
@@ -3579,7 +3593,7 @@
                 setupYearSelector();
                 updateReports();
             } else if (tabId === 'reporte-mensual-pdf' && currentUser && currentUser.role === 'admin') {
-                setupReporteAnioSelector();
+                setupReporteAnioSelecto(); // Corregido typo aquí
                 actualizarVistaPreviaReporte();
             }
         }
@@ -3596,6 +3610,237 @@
 
         // Iniciar todo cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', init);
+
+        // ============ MÓDULO EXPORTAR PDF (SOLUCIÓN AL PDF EN BLANCO) ============
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var btnPdf = document.getElementById('exportFuelPdfBtn');
+                if (!btnPdf) return;
+
+                btnPdf.classList.remove('hidden');
+                btnPdf.style.display = 'inline-block';
+
+                var divContenedor = document.getElementById('panelExportFuelPdf');
+                
+                btnPdf.onclick = function() {
+                    if (typeof fuelRecords !== 'undefined' && fuelRecords.length > 0) {
+                        var fechas = fuelRecords.map(function(f) { return f.fecha; }).filter(function(f) { return f; }).sort();
+                        var desdeInput = document.getElementById('fuelPdfFechaDesde');
+                        var hastaInput = document.getElementById('fuelPdfFechaHasta');
+                        if (desdeInput && !desdeInput.value) desdeInput.value = fechas[0];
+                        if (hastaInput && !hastaInput.value) hastaInput.value = fechas[fechas.length - 1];
+                    }
+                    if (typeof mostrarSoloPendientes !== 'undefined') {
+                        document.getElementById('fuelPdfSoloPendientes').checked = mostrarSoloPendientes.combustible;
+                    }
+                    divContenedor.classList.remove('hidden');
+                    actualizarResumen();
+                };
+
+                document.getElementById('cerrarPanelFuelPdf').onclick = function() { 
+                    divContenedor.classList.add('hidden'); 
+                };
+                
+                document.getElementById('fuelPdfLimpiarFechas').onclick = function() {
+                    document.getElementById('fuelPdfFechaDesde').value = '';
+                    document.getElementById('fuelPdfFechaHasta').value = '';
+                    actualizarResumen();
+                };
+
+                ['fuelPdfFechaDesde', 'fuelPdfFechaHasta', 'fuelPdfSoloPendientes'].forEach(function(id) {
+                    document.getElementById(id).addEventListener('change', actualizarResumen);
+                    document.getElementById(id).addEventListener('input', actualizarResumen);
+                });
+
+                function obtenerFiltrados() {
+                    if (typeof fuelRecords === 'undefined') return [];
+                    var regs = fuelRecords.slice();
+                    var desde = document.getElementById('fuelPdfFechaDesde').value;
+                    var hasta = document.getElementById('fuelPdfFechaHasta').value;
+                    var soloPend = document.getElementById('fuelPdfSoloPendientes').checked;
+                    
+                    if (desde) regs = regs.filter(function(f) { return f.fecha && f.fecha >= desde; });
+                    if (hasta) regs = regs.filter(function(f) { return f.fecha && f.fecha <= hasta; });
+                    if (soloPend) regs = regs.filter(function(f) { return f.estadoPago === 'pendiente'; });
+                    
+                    return typeof ordenarPorFecha === 'function' ? ordenarPorFecha(regs) : regs;
+                }
+
+                function actualizarResumen() {
+                    var regs = obtenerFiltrados();
+                    var litros = 0, costo = 0;
+                    for (var i = 0; i < regs.length; i++) {
+                        litros += parseFloat(regs[i].litros) || 0;
+                        costo += parseFloat(regs[i].costo) || 0;
+                    }
+                    document.getElementById('fuelPdfResumenTexto').innerHTML = '📊 <strong>' + regs.length + '</strong> registros | <strong>' + litros.toFixed(2) + ' L</strong> | Total: <strong>$' + costo.toFixed(2) + '</strong>';
+                }
+
+                document.getElementById('fuelPdfConfirmar').onclick = async function() {
+                    var btn = this;
+                    var txt = btn.innerHTML;
+                    btn.innerHTML = '⏳ Generando...';
+                    btn.disabled = true;
+
+                    var regs = obtenerFiltrados();
+                    if (regs.length === 0) {
+                        alert('No hay registros en este rango de fechas.');
+                        btn.innerHTML = txt; btn.disabled = false;
+                        return;
+                    }
+
+                    var totalLitros = 0, totalCosto = 0, totalTickets = regs.length;
+
+                    for (var i = 0; i < regs.length; i++) {
+                        totalLitros += parseFloat(regs[i].litros) || 0;
+                        totalCosto += parseFloat(regs[i].costo) || 0;
+                    }
+
+                    var fechaInicio = document.getElementById('fuelPdfFechaDesde').value;
+                    var fechaFin = document.getElementById('fuelPdfFechaHasta').value;
+                    
+                    var textoPeriodo = "Todos";
+                    if (fechaInicio && fechaFin) {
+                        textoPeriodo = (typeof formatearFecha === 'function' ? formatearFecha(fechaInicio) : fechaInicio) + " al " + (typeof formatearFecha === 'function' ? formatearFecha(fechaFin) : fechaFin);
+                    } else if (fechaInicio) {
+                        textoPeriodo = "Desde " + (typeof formatearFecha === 'function' ? formatearFecha(fechaInicio) : fechaInicio);
+                    } else if (fechaFin) {
+                        textoPeriodo = "Hasta " + (typeof formatearFecha === 'function' ? formatearFecha(fechaFin) : fechaFin);
+                    }
+
+                    var hoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                    var filas = '';
+                    for (var i = 0; i < regs.length; i++) {
+                        var r = regs[i];
+                        var fMostrar = typeof formatearFecha === 'function' ? formatearFecha(r.fecha) : r.fecha;
+                        var numTicket = "EP-" + new Date(r.fecha).getFullYear().toString().substring(2) + (i + 1).toString().padStart(3, '0');
+                        var estado = (r.estadoPago || 'pendiente').toLowerCase();
+                        var estadoTexto = estado === 'pagado' ? 'Completado' : 'Pendiente';
+                        var solicitante = r.centro === 'UN CCS' ? 'UN CCS' : 'MSO';
+                        var litros = r.litros ? (parseFloat(r.litros) || 0).toFixed(2) : '—';
+                        var costo = r.costo ? "$" + (parseFloat(r.costo) || 0).toFixed(2) : '—';
+
+                        filas += `
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 12px 8px; font-size: 13px;">${fMostrar}</td>
+                                <td style="padding: 12px 8px; font-size: 13px;">${numTicket}</td>
+                                <td style="padding: 12px 8px; font-size: 13px;">${solicitante}</td>
+                                <td style="padding: 12px 8px; font-size: 13px; font-weight: bold;">${r.placa || ''}</td>
+                                <td style="padding: 12px 8px; font-size: 13px;">Gasolina</td>
+                                <td style="padding: 12px 8px; font-size: 13px; text-align: right;">${litros}</td>
+                                <td style="padding: 12px 8px; font-size: 13px; text-align: right;">${costo}</td>
+                                <td style="padding: 12px 8px; font-size: 13px;">${solicitante}</td>
+                                <td style="padding: 12px 8px; font-size: 13px;">${estadoTexto}</td>
+                            </tr>
+                        `;
+                    }
+
+                    var html = `
+                        <div style="font-family: Arial, Helvetica, sans-serif; width: 1000px; margin: 0 auto; background: #fff; padding: 40px; box-sizing: border-box;">
+                            <div style="margin-bottom: 30px;">
+                                <h1 style="font-size: 28px; font-weight: bold; color: #111827; margin: 0 0 5px 0;">INTER - Control de Combustibles</h1>
+                                <h2 style="font-size: 20px; font-weight: normal; color: #4b5563; margin: 0 0 10px 0;">Reporte de Consumo - El Paraíso</h2>
+                                <p style="font-size: 12px; color: #6b7280; margin: 0;">
+                                    Período: ${textoPeriodo} | Solicitante: Todos | Generado: ${hoy}
+                                </p>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 40px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #111827;">
+                                <div style="text-align: right;">
+                                    <div style="font-size: 16px; color: #111827; font-weight: bold;">Total Litros: ${totalLitros.toFixed(2)} L</div>
+                                    <div style="font-size: 16px; color: #111827; font-weight: bold; margin-top: 5px;">Total Costo: $${totalCosto.toFixed(2)}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 16px; color: #111827; font-weight: bold;">Total Tickets: ${totalTickets}</div>
+                                </div>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr style="background-color: #4b5563; color: white;">
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 12%;">Fecha</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 12%;">Ticket</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 15%;">Solicitante</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%;">Placa</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%;">Tipo</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 8%; text-align: right;">Litros</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%; text-align: right;">Costo</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 13%;">Autorizado</th>
+                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%;">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filas}
+                                </tbody>
+                            </table>
+                        </div>`;
+
+                    // Creamos un iframe invisible con dimensiones reales para que html2canvas lo pueda leer
+                    var iframe = document.createElement('iframe');
+                    iframe.style.position = 'fixed';
+                    iframe.style.width = '1100px';  // Ancho fijo para el render
+                    iframe.style.height = '3000px'; // Altura suficiente para que no haya scroll interno
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+                    iframe.style.zIndex = '-9999'; 
+                    iframe.style.opacity = '0'; 
+                    document.body.appendChild(iframe);
+
+                    var doc = iframe.contentWindow.document;
+                    doc.open();
+                    doc.write('<html><head><meta charset="utf-8"><style>body{margin:0; padding:0; background:#fff;}</style></head><body>' + html + '</body></html>');
+                    doc.close();
+
+                    // Damos un tiempo para que el iframe dibuje el contenido
+                    setTimeout(async function() {
+                        try {
+                            var { jsPDF } = window.jspdf;
+                            var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+                            
+                            // Capturamos el body del iframe asegurando el fondo blanco
+                            var canvas = await html2canvas(doc.body, { 
+                                scale: 1.5, 
+                                useCORS: true, 
+                                backgroundColor: '#ffffff',
+                                windowWidth: 1100
+                            });
+                            
+                            var imgData = canvas.toDataURL('image/jpeg', 1.0);
+                            
+                            var pageWidth = pdf.internal.pageSize.getWidth();
+                            var pageHeight = pdf.internal.pageSize.getHeight();
+                            
+                            var margin = 20;
+                            var imgWidth = pageWidth - (margin * 2);
+                            var imgHeight = (canvas.height * imgWidth) / canvas.width;
+                            var xPos = margin;
+                            
+                            // Agregamos la imagen al PDF sin divisiones erróneas
+                            if (imgHeight <= pageHeight - (margin * 2)) {
+                                pdf.addImage(imgData, 'JPEG', xPos, margin, imgWidth, imgHeight);
+                            } else {
+                                var restante = imgHeight, posY = margin;
+                                while (restante > 0) {
+                                    var hPag = Math.min(restante, pageHeight - (margin * 2));
+                                    pdf.addImage(imgData, 'JPEG', xPos, margin, imgWidth, imgHeight, undefined, 'FAST', 0, -(posY - margin));
+                                    restante -= hPag; 
+                                    posY += hPag;
+                                    if (restante > 0) pdf.addPage();
+                                }
+                            }
+                            
+                            pdf.save('Reporte_Combustible_' + new Date().toISOString().slice(0, 10) + '.pdf');
+                            divContenedor.classList.add('hidden');
+                        } catch (err) {
+                            console.error(err);
+                            alert('Error al generar el PDF.');
+                        } finally {
+                            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                            btn.innerHTML = txt; btn.disabled = false;
+                        }
+                    }, 800); // 800ms asegura que el navegador pinte todo el HTML
+                };
+            }, 1000);
+        });
     </script>
 </body>
 </html>

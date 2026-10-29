@@ -3593,7 +3593,7 @@
                 setupYearSelector();
                 updateReports();
             } else if (tabId === 'reporte-mensual-pdf' && currentUser && currentUser.role === 'admin') {
-                setupReporteAnioSelecto(); // Corregido typo aquí
+                setupReporteAnioSelector();
                 actualizarVistaPreviaReporte();
             }
         }
@@ -3611,7 +3611,7 @@
         // Iniciar todo cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', init);
 
-        // ============ MÓDULO EXPORTAR PDF (SOLUCIÓN AL PDF EN BLANCO) ============
+        // ============ MÓDULO EXPORTAR PDF (CORREGIDO: SIN DUPLICADOS NI PÁGINAS EXTRA) ============
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 var btnPdf = document.getElementById('exportFuelPdfBtn');
@@ -3652,18 +3652,43 @@
                     document.getElementById(id).addEventListener('input', actualizarResumen);
                 });
 
+                // ========== FUNCIÓN PARA ELIMINAR DUPLICADOS ==========
+                function eliminarDuplicados(registros) {
+                    var vistos = {};
+                    var resultado = [];
+                    for (var i = 0; i < registros.length; i++) {
+                        var r = registros[i];
+                        var clave = (r.placa || '') + '|' + (r.fecha || '') + '|' + (r.litros || '') + '|' + (r.costo || '') + '|' + (r.centro || '');
+                        if (!vistos[clave]) {
+                            vistos[clave] = true;
+                            resultado.push(r);
+                        }
+                    }
+                    return resultado;
+                }
+
                 function obtenerFiltrados() {
                     if (typeof fuelRecords === 'undefined') return [];
-                    var regs = fuelRecords.slice();
                     var desde = document.getElementById('fuelPdfFechaDesde').value;
                     var hasta = document.getElementById('fuelPdfFechaHasta').value;
                     var soloPend = document.getElementById('fuelPdfSoloPendientes').checked;
                     
+                    // 1. Eliminar duplicados primero
+                    var regs = eliminarDuplicados(fuelRecords);
+                    
+                    // 2. Ordenar por fecha descendente
+                    regs.sort(function(a, b) {
+                        var fA = a.fecha ? a.fecha.split('-').join('') : '0';
+                        var fB = b.fecha ? b.fecha.split('-').join('') : '0';
+                        return parseInt(fB) - parseInt(fA); 
+                    });
+                    
+                    // 3. Aplicar filtros
                     if (desde) regs = regs.filter(function(f) { return f.fecha && f.fecha >= desde; });
                     if (hasta) regs = regs.filter(function(f) { return f.fecha && f.fecha <= hasta; });
                     if (soloPend) regs = regs.filter(function(f) { return f.estadoPago === 'pendiente'; });
                     
-                    return typeof ordenarPorFecha === 'function' ? ordenarPorFecha(regs) : regs;
+                    return regs;
                 }
 
                 function actualizarResumen() {
@@ -3689,8 +3714,8 @@
                         return;
                     }
 
+                    // --- CÁLCULOS ---
                     var totalLitros = 0, totalCosto = 0, totalTickets = regs.length;
-
                     for (var i = 0; i < regs.length; i++) {
                         totalLitros += parseFloat(regs[i].litros) || 0;
                         totalCosto += parseFloat(regs[i].costo) || 0;
@@ -3698,7 +3723,6 @@
 
                     var fechaInicio = document.getElementById('fuelPdfFechaDesde').value;
                     var fechaFin = document.getElementById('fuelPdfFechaHasta').value;
-                    
                     var textoPeriodo = "Todos";
                     if (fechaInicio && fechaFin) {
                         textoPeriodo = (typeof formatearFecha === 'function' ? formatearFecha(fechaInicio) : fechaInicio) + " al " + (typeof formatearFecha === 'function' ? formatearFecha(fechaFin) : fechaFin);
@@ -3710,134 +3734,164 @@
 
                     var hoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-                    var filas = '';
-                    for (var i = 0; i < regs.length; i++) {
-                        var r = regs[i];
-                        var fMostrar = typeof formatearFecha === 'function' ? formatearFecha(r.fecha) : r.fecha;
-                        var numTicket = "EP-" + new Date(r.fecha).getFullYear().toString().substring(2) + (i + 1).toString().padStart(3, '0');
-                        var estado = (r.estadoPago || 'pendiente').toLowerCase();
-                        var estadoTexto = estado === 'pagado' ? 'Completado' : 'Pendiente';
-                        var solicitante = r.centro === 'UN CCS' ? 'UN CCS' : 'MSO';
-                        var litros = r.litros ? (parseFloat(r.litros) || 0).toFixed(2) : '—';
-                        var costo = r.costo ? "$" + (parseFloat(r.costo) || 0).toFixed(2) : '—';
+                    try {
+                        var { jsPDF } = window.jspdf;
+                        var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+                        var pageWidth = pdf.internal.pageSize.getWidth();
+                        var pageHeight = pdf.internal.pageSize.getHeight();
 
-                        filas += `
-                            <tr style="border-bottom: 1px solid #e5e7eb;">
-                                <td style="padding: 12px 8px; font-size: 13px;">${fMostrar}</td>
-                                <td style="padding: 12px 8px; font-size: 13px;">${numTicket}</td>
-                                <td style="padding: 12px 8px; font-size: 13px;">${solicitante}</td>
-                                <td style="padding: 12px 8px; font-size: 13px; font-weight: bold;">${r.placa || ''}</td>
-                                <td style="padding: 12px 8px; font-size: 13px;">Gasolina</td>
-                                <td style="padding: 12px 8px; font-size: 13px; text-align: right;">${litros}</td>
-                                <td style="padding: 12px 8px; font-size: 13px; text-align: right;">${costo}</td>
-                                <td style="padding: 12px 8px; font-size: 13px;">${solicitante}</td>
-                                <td style="padding: 12px 8px; font-size: 13px;">${estadoTexto}</td>
-                            </tr>
-                        `;
-                    }
+                        // --- FUNCIÓN PARA GENERAR EL HTML DE UNA PÁGINA ---
+                        function generarHTMLPagina(esPrimeraPagina, filasPagina) {
+                            var html = `
+                                <div style="font-family: Arial, sans-serif; width: 1000px; padding: 20px 40px; background: #fff; box-sizing: border-box;">
+                                    <div style="margin-bottom: 20px;">
+                                        <h1 style="font-size: 24px; font-weight: bold; color: #111827; margin: 0 0 5px 0;">INTER - Control de Combustibles</h1>
+                                        <h2 style="font-size: 18px; font-weight: normal; color: #4b5563; margin: 0 0 10px 0;">Reporte de Consumo - U.N Los Ruices</h2>
+                                        <p style="font-size: 12px; color: #6b7280; margin: 0;">
+                                            Período: ${textoPeriodo} | Generado: ${hoy}
+                                        </p>
+                                    </div>
+                            `;
 
-                    var html = `
-                        <div style="font-family: Arial, Helvetica, sans-serif; width: 1000px; margin: 0 auto; background: #fff; padding: 40px; box-sizing: border-box;">
-                            <div style="margin-bottom: 30px;">
-                                <h1 style="font-size: 28px; font-weight: bold; color: #111827; margin: 0 0 5px 0;">INTER - Control de Combustibles</h1>
-                                <h2 style="font-size: 20px; font-weight: normal; color: #4b5563; margin: 0 0 10px 0;">Reporte de Consumo - El Paraíso</h2>
-                                <p style="font-size: 12px; color: #6b7280; margin: 0;">
-                                    Período: ${textoPeriodo} | Solicitante: Todos | Generado: ${hoy}
-                                </p>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 40px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #111827;">
-                                <div style="text-align: right;">
-                                    <div style="font-size: 16px; color: #111827; font-weight: bold;">Total Litros: ${totalLitros.toFixed(2)} L</div>
-                                    <div style="font-size: 16px; color: #111827; font-weight: bold; margin-top: 5px;">Total Costo: $${totalCosto.toFixed(2)}</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-size: 16px; color: #111827; font-weight: bold;">Total Tickets: ${totalTickets}</div>
-                                </div>
-                            </div>
-                            <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                                <thead>
-                                    <tr style="background-color: #4b5563; color: white;">
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 12%;">Fecha</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 12%;">Ticket</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 15%;">Solicitante</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%;">Placa</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%;">Tipo</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 8%; text-align: right;">Litros</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%; text-align: right;">Costo</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 13%;">Autorizado</th>
-                                        <th style="padding: 12px 8px; font-size: 12px; font-weight: bold; width: 10%;">Estado</th>
+                            if (esPrimeraPagina) {
+                                html += `
+                                    <div style="display: flex; justify-content: flex-end; gap: 40px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #111827;">
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 14px; color: #111827; font-weight: bold;">Total Litros: ${totalLitros.toFixed(2)} L</div>
+                                            <div style="font-size: 14px; color: #111827; font-weight: bold; margin-top: 5px;">Total Costo: $${totalCosto.toFixed(2)}</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 14px; color: #111827; font-weight: bold;">Total Tickets: ${totalTickets}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            html += `
+                                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                        <thead>
+                                            <tr style="background-color: #4b5563; color: white;">
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 12%;">Fecha</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 12%;">Ticket</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 15%;">Solicitante</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 10%;">Placa</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 10%;">Tipo</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 8%; text-align: right;">Litros</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 10%; text-align: right;">Costo</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 13%;">Autorizado</th>
+                                                <th style="padding: 10px 8px; font-size: 11px; font-weight: bold; width: 10%;">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                            `;
+
+                            for (var i = 0; i < filasPagina.length; i++) {
+                                var r = filasPagina[i];
+                                var fMostrar = typeof formatearFecha === 'function' ? formatearFecha(r.fecha) : r.fecha;
+                                var numTicket = "EP-" + new Date(r.fecha).getFullYear().toString().substring(2) + (r._indexOriginal + 1).toString().padStart(3, '0');
+                                var estado = (r.estadoPago || 'pendiente').toLowerCase();
+                                var estadoTexto = estado === 'pagado' ? 'Completado' : 'Pendiente';
+                                var solicitante = r.centro === 'UN CCS' ? 'UN CCS' : 'MSO';
+                                var litros = r.litros ? (parseFloat(r.litros) || 0).toFixed(2) : '—';
+                                var costo = r.costo ? "$" + (parseFloat(r.costo) || 0).toFixed(2) : '—';
+
+                                html += `
+                                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                                        <td style="padding: 10px 8px; font-size: 12px;">${fMostrar}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px;">${numTicket}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px;">${solicitante}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px; font-weight: bold;">${r.placa || ''}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px;">Gasolina</td>
+                                        <td style="padding: 10px 8px; font-size: 12px; text-align: right;">${litros}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px; text-align: right;">${costo}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px;">${solicitante}</td>
+                                        <td style="padding: 10px 8px; font-size: 12px;">${estadoTexto}</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    ${filas}
-                                </tbody>
-                            </table>
-                        </div>`;
+                                `;
+                            }
 
-                    // Creamos un iframe invisible con dimensiones reales para que html2canvas lo pueda leer
-                    var iframe = document.createElement('iframe');
-                    iframe.style.position = 'fixed';
-                    iframe.style.width = '1100px';  // Ancho fijo para el render
-                    iframe.style.height = '3000px'; // Altura suficiente para que no haya scroll interno
-                    iframe.style.top = '0';
-                    iframe.style.left = '0';
-                    iframe.style.zIndex = '-9999'; 
-                    iframe.style.opacity = '0'; 
-                    document.body.appendChild(iframe);
+                            html += `</tbody></table></div>`;
+                            return html;
+                        }
 
-                    var doc = iframe.contentWindow.document;
-                    doc.open();
-                    doc.write('<html><head><meta charset="utf-8"><style>body{margin:0; padding:0; background:#fff;}</style></head><body>' + html + '</body></html>');
-                    doc.close();
+                        // --- PAGINACIÓN CORREGIDA ---
+                        var filasPorPagina = 28; 
+                        var totalPaginas = Math.ceil(regs.length / filasPorPagina);
+                        
+                        // Asignar índice original a cada registro para el ticket
+                        for (var i = 0; i < regs.length; i++) {
+                            regs[i]._indexOriginal = i;
+                        }
 
-                    // Damos un tiempo para que el iframe dibuje el contenido
-                    setTimeout(async function() {
-                        try {
-                            var { jsPDF } = window.jspdf;
-                            var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+                        for (var p = 0; p < totalPaginas; p++) {
+                            if (p > 0) pdf.addPage();
                             
-                            // Capturamos el body del iframe asegurando el fondo blanco
+                            var inicio = p * filasPorPagina;
+                            var fin = Math.min(inicio + filasPorPagina, regs.length);
+                            var filasPagina = regs.slice(inicio, fin);
+                            var esPrimeraPagina = (p === 0);
+                            
+                            // Crear un iframe temporal para esta página
+                            var iframe = document.createElement('iframe');
+                            iframe.style.position = 'absolute';
+                            iframe.style.width = '1000px';
+                            iframe.style.height = '100px';
+                            iframe.style.top = '-9999px';
+                            iframe.style.left = '-9999px';
+                            iframe.style.border = 'none';
+                            document.body.appendChild(iframe);
+                            
+                            var doc = iframe.contentWindow.document;
+                            doc.open();
+                            doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0; padding:0; background:#fff;}</style></head><body>' + generarHTMLPagina(esPrimeraPagina, filasPagina) + '</body></html>');
+                            doc.close();
+
+                            // Esperar a que renderice
+                            await new Promise(function(resolve) { setTimeout(resolve, 250); });
+                            
                             var canvas = await html2canvas(doc.body, { 
-                                scale: 1.5, 
+                                scale: 2, 
                                 useCORS: true, 
                                 backgroundColor: '#ffffff',
-                                windowWidth: 1100
+                                logging: false,
+                                windowWidth: 1000,
+                                windowHeight: doc.body.scrollHeight
                             });
                             
                             var imgData = canvas.toDataURL('image/jpeg', 1.0);
                             
-                            var pageWidth = pdf.internal.pageSize.getWidth();
-                            var pageHeight = pdf.internal.pageSize.getHeight();
-                            
-                            var margin = 20;
-                            var imgWidth = pageWidth - (margin * 2);
+                            // Ajustar imagen al ancho de la página sin desbordar
+                            var imgWidth = pageWidth;
                             var imgHeight = (canvas.height * imgWidth) / canvas.width;
-                            var xPos = margin;
                             
-                            // Agregamos la imagen al PDF sin divisiones erróneas
-                            if (imgHeight <= pageHeight - (margin * 2)) {
-                                pdf.addImage(imgData, 'JPEG', xPos, margin, imgWidth, imgHeight);
-                            } else {
-                                var restante = imgHeight, posY = margin;
-                                while (restante > 0) {
-                                    var hPag = Math.min(restante, pageHeight - (margin * 2));
-                                    pdf.addImage(imgData, 'JPEG', xPos, margin, imgWidth, imgHeight, undefined, 'FAST', 0, -(posY - margin));
-                                    restante -= hPag; 
-                                    posY += hPag;
-                                    if (restante > 0) pdf.addPage();
-                                }
+                            // Si la imagen es más alta que la página, escalar por altura
+                            if (imgHeight > pageHeight) {
+                                imgHeight = pageHeight;
+                                imgWidth = (canvas.width * pageHeight) / canvas.height;
                             }
                             
-                            pdf.save('Reporte_Combustible_' + new Date().toISOString().slice(0, 10) + '.pdf');
-                            divContenedor.classList.add('hidden');
-                        } catch (err) {
-                            console.error(err);
-                            alert('Error al generar el PDF.');
-                        } finally {
-                            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-                            btn.innerHTML = txt; btn.disabled = false;
+                            var xPos = (pageWidth - imgWidth) / 2;
+                            pdf.addImage(imgData, 'JPEG', xPos, 0, imgWidth, imgHeight);
+
+                            // Pie de página
+                            pdf.setFontSize(9);
+                            pdf.setTextColor(150);
+                            pdf.text("Sistema de Gestión de Flota - Página " + (p + 1) + " de " + totalPaginas, 40, pageHeight - 15);
+
+                            // Limpiar iframe
+                            document.body.removeChild(iframe);
                         }
-                    }, 800); // 800ms asegura que el navegador pinte todo el HTML
+
+                        pdf.save('Reporte_Combustible_' + new Date().toISOString().slice(0, 10) + '.pdf');
+                        divContenedor.classList.add('hidden');
+
+                    } catch (err) {
+                        console.error('Error generando PDF:', err);
+                        alert('Error al generar el PDF. Por favor intente nuevamente.');
+                    } finally {
+                        btn.innerHTML = txt; 
+                        btn.disabled = false;
+                    }
                 };
             }, 1000);
         });

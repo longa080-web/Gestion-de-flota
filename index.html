@@ -666,7 +666,7 @@
         // ============ LISTA MAESTRA DE DEPARTAMENTOS POR CENTRO ============
         const DEPARTAMENTOS_POR_CENTRO = {
             'MSO': ['Presidencia','Documentación de Obras','Backbone','Marketing','Interconexiones','Cuentas Corporativas','Importaciones','RRHH MSO'],
-            'UN CCS': ['RRHH','Administración','Tesorería','Sistemas','Obras','SSL','Admintec Los Ruices','Admintec El Rosal','C.O La Naya','Head End','Almacén','Comercial']
+            'UN CCS': ['RRHH','Administración','Tesorería','Sistemas','Obras','SSL','Admintec Los Ruices','Admintec El Rosal','C.O La Naya','Head End','Almacén','Comercial','Metropolitana']
         };
 
         function actualizarDepartamentos(centroSelectId, deptoSelectId, valorSeleccionado) {
@@ -1765,19 +1765,21 @@
             var totLav = u.tLav + m.tLav;
             var totFuel = u.tFuel + m.tFuel;
             var totGas = u.tGas + m.tGas;
+            var totLitFuel = u.litFuel + m.litFuel;
+            var totLitGas = u.litGas + m.litGas;
 
             // Por departamento
             var dMap = {};
             function acum(centro, depto, campo, valor) {
                 if (!depto) depto = 'Sin departamento';
                 var key = centro + '||' + depto;
-                if (!dMap[key]) dMap[key] = { centro: centro, depto: depto, mant: 0, lav: 0, fuel: 0, gas: 0 };
+                if (!dMap[key]) dMap[key] = { centro: centro, depto: depto, mant: 0, lav: 0, fuel: 0, gas: 0, litFuel: 0, litGas: 0 };
                 dMap[key][campo] += valor;
             }
             mant.forEach(function(x) { acum(x.centro, x.departamento, 'mant', parseFloat(x.costo) || 0); });
             lav.forEach(function(x) { acum(x.centro, x.departamento, 'lav', parseFloat(x.costo) || 0); });
-            fuel.forEach(function(x) { acum(x.centro, x.departamento, 'fuel', parseFloat(x.costo) || 0); });
-            gas.forEach(function(x) { acum(x.centro, x.departamento, 'gas', parseFloat(x.costo) || 0); });
+            fuel.forEach(function(x) { acum(x.centro, x.departamento, 'fuel', parseFloat(x.costo) || 0); acum(x.centro, x.departamento, 'litFuel', parseFloat(x.litros) || 0); });
+            gas.forEach(function(x) { acum(x.centro, x.departamento, 'gas', parseFloat(x.costo) || 0); acum(x.centro, x.departamento, 'litGas', parseFloat(x.litros) || 0); });
 
             var dArr = Object.keys(dMap).map(function(k) {
                 var d = dMap[k]; d.total = d.mant + d.lav + d.fuel + d.gas; return d;
@@ -1790,6 +1792,8 @@
             var tDLav = dArr.reduce(function(s, d) { return s + d.lav; }, 0);
             var tDFuel = dArr.reduce(function(s, d) { return s + d.fuel; }, 0);
             var tDGas = dArr.reduce(function(s, d) { return s + d.gas; }, 0);
+            var tDLitFuel = dArr.reduce(function(s, d) { return s + d.litFuel; }, 0);
+            var tDLitGas = dArr.reduce(function(s, d) { return s + d.litGas; }, 0);
             var tDTotal = dArr.reduce(function(s, d) { return s + d.total; }, 0);
 
             cont.innerHTML = `
@@ -1826,8 +1830,8 @@
                                 <td style="padding:8px; border:1px solid #333;">TOTALES</td>
                                 <td style="padding:8px; border:1px solid #333;">$${totMant.toFixed(2)}</td>
                                 <td style="padding:8px; border:1px solid #333;">$${totLav.toFixed(2)}</td>
-                                <td style="padding:8px; border:1px solid #333;">$${totFuel.toFixed(2)}</td>
-                                <td style="padding:8px; border:1px solid #333;">$${totGas.toFixed(2)}</td>
+                                <td style="padding:8px; border:1px solid #333;">$${totFuel.toFixed(2)}<br/><span style="font-size:9px;">${totLitFuel.toFixed(2)} L</span></td>
+                                <td style="padding:8px; border:1px solid #333;">$${totGas.toFixed(2)}<br/><span style="font-size:9px;">${totLitGas.toFixed(2)} L</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -1853,8 +1857,8 @@
                                         '<td style="padding:6px; border:1px solid #999;">' + d.depto + '</td>' +
                                         '<td style="padding:6px; border:1px solid #999; text-align:right;">$' + d.mant.toFixed(2) + '</td>' +
                                         '<td style="padding:6px; border:1px solid #999; text-align:right;">$' + d.lav.toFixed(2) + '</td>' +
-                                        '<td style="padding:6px; border:1px solid #999; text-align:right;">$' + d.fuel.toFixed(2) + '</td>' +
-                                        '<td style="padding:6px; border:1px solid #999; text-align:right;">$' + d.gas.toFixed(2) + '</td>' +
+                                        '<td style="padding:6px; border:1px solid #999; text-align:right;">$' + d.fuel.toFixed(2) + '<br/><span style="font-size:8px; color:#666;">' + d.litFuel.toFixed(2) + ' L</span></td>' +
+                                        '<td style="padding:6px; border:1px solid #999; text-align:right;">$' + d.gas.toFixed(2) + '<br/><span style="font-size:8px; color:#666;">' + d.litGas.toFixed(2) + ' L</span></td>' +
                                         '<td style="padding:6px; border:1px solid #999; text-align:right; font-weight:bold;">$' + d.total.toFixed(2) + '</td>' +
                                     '</tr>';
                                 }).join('')
@@ -1863,8 +1867,8 @@
                                 <td colspan="2" style="padding:6px; border:1px solid #333;">TOTAL GENERAL</td>
                                 <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDMant.toFixed(2)}</td>
                                 <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDLav.toFixed(2)}</td>
-                                <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDFuel.toFixed(2)}</td>
-                                <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDGas.toFixed(2)}</td>
+                                <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDFuel.toFixed(2)}<br/><span style="font-size:8px;">${tDLitFuel.toFixed(2)} L</span></td>
+                                <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDGas.toFixed(2)}<br/><span style="font-size:8px;">${tDLitGas.toFixed(2)} L</span></td>
                                 <td style="padding:6px; border:1px solid #333; text-align:right;">$${tDTotal.toFixed(2)}</td>
                             </tr>
                         </tbody>
@@ -1982,25 +1986,35 @@
             var el = document.getElementById('fuelPdfResumenTexto'); if (!el) return;
             var f = obtenerFuelFiltradoPdf();
             var t = f.reduce(function(s, x) { return s + (parseFloat(x.costo) || 0); }, 0);
-            el.textContent = f.length + ' registro(s) — Total: $' + t.toFixed(2);
+            var l = f.reduce(function(s, x) { return s + (parseFloat(x.litros) || 0); }, 0);
+            el.textContent = f.length + ' registro(s) — Total litros: ' + l.toFixed(2) + ' L — Total: $' + t.toFixed(2);
         }
         async function generarPdfCombustible() {
             var f = obtenerFuelFiltradoPdf();
             if (f.length === 0) { alert('No hay registros para exportar'); return; }
+
+            var totalLitros = f.reduce(function(s, x) { return s + (parseFloat(x.litros) || 0); }, 0);
+            var totalCosto = f.reduce(function(s, x) { return s + (parseFloat(x.costo) || 0); }, 0);
+
             var div = document.createElement('div');
             div.style.padding = '20px'; div.style.background = 'white'; div.style.width = '1000px';
             div.innerHTML = `
-                <h1 style="text-align:center; color:#005BAA; margin-bottom: 20px;">Reporte de Combustible</h1>
+                <h1 style="text-align:center; color:#005BAA; margin-bottom: 4px;">Reporte de Combustible</h1>
+                <p style="text-align:center; color:#666; margin-bottom: 16px; font-size: 12px;">
+                    Total registros: ${f.length} &nbsp;|&nbsp; Total litros: ${totalLitros.toFixed(2)} L &nbsp;|&nbsp; Total costo: $${totalCosto.toFixed(2)}
+                </p>
                 <table style="width:100%; border-collapse: collapse; font-size: 12px;">
-                    <thead><tr style="background:#005BAA; color:white;">
-                        <th style="padding:8px; border:1px solid #ddd;">Placa</th>
-                        <th style="padding:8px; border:1px solid #ddd;">Fecha</th>
-                        <th style="padding:8px; border:1px solid #ddd;">Centro</th>
-                        <th style="padding:8px; border:1px solid #ddd;">Departamento</th>
-                        <th style="padding:8px; border:1px solid #ddd;">Litros</th>
-                        <th style="padding:8px; border:1px solid #ddd;">Costo</th>
-                        <th style="padding:8px; border:1px solid #ddd;">Estado</th>
-                    </tr></thead>
+                    <thead>
+                        <tr style="background:#005BAA; color:white;">
+                            <th style="padding:8px; border:1px solid #ddd;">Placa</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Fecha</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Centro</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Departamento</th>
+                            <th style="padding:8px; border:1px solid #ddd; text-align:right;">Litros</th>
+                            <th style="padding:8px; border:1px solid #ddd; text-align:right;">Costo</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Estado</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         ${f.map(function(x) {
                             return '<tr>' +
@@ -2008,11 +2022,17 @@
                                 '<td style="padding:6px; border:1px solid #ddd;">' + formatearFecha(x.fecha) + '</td>' +
                                 '<td style="padding:6px; border:1px solid #ddd;">' + x.centro + '</td>' +
                                 '<td style="padding:6px; border:1px solid #ddd;">' + (x.departamento || 'N/A') + '</td>' +
-                                '<td style="padding:6px; border:1px solid #ddd;">' + x.litros + ' L</td>' +
-                                '<td style="padding:6px; border:1px solid #ddd;">$' + parseFloat(x.costo).toFixed(2) + '</td>' +
+                                '<td style="padding:6px; border:1px solid #ddd; text-align:right;">' + (parseFloat(x.litros) || 0).toFixed(2) + ' L</td>' +
+                                '<td style="padding:6px; border:1px solid #ddd; text-align:right;">$' + parseFloat(x.costo).toFixed(2) + '</td>' +
                                 '<td style="padding:6px; border:1px solid #ddd;">' + (x.estadoPago || '').toUpperCase() + '</td>' +
                             '</tr>';
                         }).join('')}
+                        <tr style="background:#e5e7eb; font-weight:bold;">
+                            <td colspan="4" style="padding:8px; border:1px solid #333; text-align:right;">TOTALES</td>
+                            <td style="padding:8px; border:1px solid #333; text-align:right;">${totalLitros.toFixed(2)} L</td>
+                            <td style="padding:8px; border:1px solid #333; text-align:right;">$${totalCosto.toFixed(2)}</td>
+                            <td style="padding:8px; border:1px solid #333;"></td>
+                        </tr>
                     </tbody>
                 </table>`;
             document.body.appendChild(div);
